@@ -176,22 +176,24 @@ subroutine initialize(this)
     this%nja = 0
     !calculate offsets
     do i=1,this%modellist%nmodels
-        call modellist%getmodel(mp, i)
+        call this%modellist%getmodel(mp, i)
         mp%solutionid=this%id
         mp%offset = this%neq
         this%neq=this%neq+mp%neq
         mp%solutionid=this%id
     enddo
     !
-    !allocate solution arrays
+    !allocate and initialize solution arrays
     allocate(this%ia(this%neq+1))
     allocate(this%x(this%neq))
     allocate(this%rhs(this%neq))
-    this%x = 0.0d0
+    do i=1,this%neq
+        this%x(i) = 0.0d0
+    enddo
     !
     !go through each model and point x and rhs to solution
     do i=1,this%modellist%nmodels
-        call modellist%getmodel(mp, i)
+        call this%modellist%getmodel(mp, i)
         mp%x=>this%x(mp%offset+1:mp%offset+mp%neq)
         mp%rhs=>this%rhs(mp%offset+1:mp%offset+mp%neq)
     enddo
@@ -231,7 +233,7 @@ subroutine connect(this)
     !
     !add internal model connections
     do im=1,this%modellist%nmodels
-        call modellist%getmodel(mp, im)
+        call this%modellist%getmodel(mp, im)
         do i=1,mp%neq
             do jj=mp%ia(i),mp%ia(i+1)-1
                 j=mp%ja(jj)
@@ -244,7 +246,7 @@ subroutine connect(this)
     !
     !add the cross terms
     do ic=1,this%crosslist%ncrosses
-        call crosslist%getcross(cp, ic)
+        call this%crosslist%getcross(cp, ic)
         if(.not. cp%implicit) cycle
         do n=1,cp%ncross
             iglo=cp%nodem1(n)+cp%m1%offset
@@ -270,7 +272,7 @@ subroutine connect(this)
     !
     !create mapping arrays for each model
     do im=1,this%modellist%nmodels
-        call modellist%getmodel(mp, im)
+        call this%modellist%getmodel(mp, im)
         ipos=1
         do n=1,mp%neq
             istart=this%ia(n+mp.offset)
@@ -287,25 +289,29 @@ subroutine connect(this)
     !
     !create arrays for mapping cross connections to global solution
     do ic=1,this%crosslist%ncrosses
-        call crosslist%getcross(cp, ic)
-        if(.not. cp%implicit) cycle
-        do n=1,cp%ncross
-            iglo=cp%nodem1(n)+cp%m1%offset
-            jglo=cp%nodem2(n)+cp%m2%offset
-            !find jglobal value in row iglo and store in idxglo
-            do ipos=this%ia(iglo),this%ia(iglo+1)-1
-                if(jglo==this%ja(ipos)) then
-                    cp%idxglo(n)=ipos
-                    exit
-                endif
+        call this%crosslist%getcross(cp, ic)
+        if(cp%implicit) then
+            do n=1,cp%ncross
+                iglo=cp%nodem1(n)+cp%m1%offset
+                jglo=cp%nodem2(n)+cp%m2%offset
+                !find jglobal value in row iglo and store in idxglo
+                do ipos=this%ia(iglo),this%ia(iglo+1)-1
+                    if(jglo==this%ja(ipos)) then
+                        cp%idxglo(n)=ipos
+                        exit
+                    endif
+                enddo
+                do ipos=this%ia(jglo),this%ia(jglo+1)-1
+                    if(iglo==this%ja(ipos)) then
+                        cp%idxsymglo(n)=ipos
+                        exit
+                    endif
+                enddo
             enddo
-            do ipos=this%ia(jglo),this%ia(jglo+1)-1
-                if(iglo==this%ja(ipos)) then
-                    cp%idxsymglo(n)=ipos
-                    exit
-                endif
-            enddo
-        enddo
+        else
+            !put the initial x values into the cross package stage arrays
+            call cp%fill()
+        endif
     enddo    
 end subroutine connect
 
@@ -355,30 +361,33 @@ subroutine solve(this)
       !
       !fmcalc each model
       do im=1,this%modellist%nmodels
-          call modellist%getmodel(mp, im)
+          call this%modellist%getmodel(mp, im)
           call mp%fmcalc()
       enddo
       !
       !fill each model
       do im=1,this%modellist%nmodels
-          call modellist%getmodel(mp, im)
+          call this%modellist%getmodel(mp, im)
           call mp%fill(this%amat,this%nja)
       enddo
       !
       !add cross conductance to solution amat
       do ic=1,this%crosslist%ncrosses
-          call crosslist%getcross(cp, ic)
-          if(.not. cp%implicit) cycle
-          do i=1,cp%ncross
-              this%amat(cp%idxglo(i))=cp%cond(i)
-              this%amat(cp%idxsymglo(i))=cp%cond(i)
-              nodem1sln=cp%nodem1(i)+cp%m1%offset
-              nodem2sln=cp%nodem2(i)+cp%m2%offset
-              idiagsln=this%ia(nodem1sln)
-              this%amat(idiagsln)=this%amat(idiagsln)-cp%cond(i)
-              idiagsln=this%ia(nodem2sln)
-              this%amat(idiagsln)=this%amat(idiagsln)-cp%cond(i)
-          enddo
+          call this%crosslist%getcross(cp, ic)
+          if(cp%implicit) then
+              do i=1,cp%ncross
+                  this%amat(cp%idxglo(i))=cp%cond(i)
+                  this%amat(cp%idxsymglo(i))=cp%cond(i)
+                  nodem1sln=cp%nodem1(i)+cp%m1%offset
+                  nodem2sln=cp%nodem2(i)+cp%m2%offset
+                  idiagsln=this%ia(nodem1sln)
+                  this%amat(idiagsln)=this%amat(idiagsln)-cp%cond(i)
+                  idiagsln=this%ia(nodem2sln)
+                  this%amat(idiagsln)=this%amat(idiagsln)-cp%cond(i)
+              enddo
+          else
+              call cp%fill()
+          endif
       enddo
       !
       !call sms
