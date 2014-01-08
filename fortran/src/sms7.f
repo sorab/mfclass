@@ -1,6 +1,6 @@
       SUBROUTINE SMS7U1AR(IN)
 
-      USE SOLUTION, ONLY: neq,nja,ia,ja,amat,rhs,x
+      USE SOLUTIONMODULE, ONLY: neq,nja,ia,ja,amat,rhs,x
       USE SimModule
       USE SMSMODULE
       USE XMDMODULE, ONLY: IACL
@@ -272,7 +272,7 @@ C PERFORM RESIDUAL REDUCTION AND NEWTON LINEARIZATION AND
 C PREPARE FOR SPARSE SOLVER, AND CHECK CONVERGENCE OF NONLINEARITIES
 C******************************************************************
       USE SimModule
-      USE SOLUTION, ONLY: neq,nja,ia,ja,amat,rhs,x,IBOUND=>active
+      USE SOLUTIONMODULE, ONLY: neq,nja,ia,ja,amat,rhs,x,IBOUND=>active
       USE SMSMODULE
       USE XMDMODULE
       IMPLICIT NONE
@@ -410,7 +410,7 @@ C******************************************************************
 C PREPARE FOR SPARSE SOLVER, AND CHECK CONVERGENCE OF NONLINEARITIES
 C******************************************************************
       USE SimModule
-      USE SOLUTION, ONLY: neq,nja,ia,ja,amat,rhs,x,IBOUND=>active
+      USE SOLUTIONMODULE, ONLY: neq,nja,ia,ja,amat,rhs,x,IBOUND=>active
       USE SMSMODULE
       USE XMDMODULE
       IMPLICIT NONE
@@ -517,7 +517,7 @@ C     ******************************************************************
 !     ------------------------------------------------------------------
 !     SPECIFICATIONS:
 !     -----------------------------------------------------------------
-      USE SOLUTION, ONLY: neq,nja,ia,ja,amat,rhs,x,IBOUND=>active
+      USE SOLUTIONMODULE, ONLY: neq,nja,ia,ja,amat,rhs,x,IBOUND=>active
       USE SMSMODULE
       IMPLICIT NONE
 !     -----------------------------------------------------------------
@@ -654,7 +654,7 @@ C
 C      SPECIFICATIONS:
 C     ------------------------------------------------------------------
       USE SimModule
-      USE SOLUTION, ONLY: neq,nja,ia,ja,amat,rhs,x,IBOUND=>active
+      USE SOLUTIONMODULE, ONLY: neq,nja,ia,ja,amat,rhs,x,IBOUND=>active
       USE SMSMODULE, ONLY: IBFLAG,BTOL,BREDUC,NUMTRACK,HCLOSE,HTEMP,
      &                     GAMMA,HCHOLD,BIGCHOLD,BIGCH,RES_LIM,NONMETH,
      &                     RES_PREV,RES_NEW,RES_IN,IBCOUNT 
@@ -751,7 +751,7 @@ C     ******************************************************************
 C
 C      SPECIFICATIONS:
 C     ------------------------------------------------------------------
-      USE SOLUTION, ONLY: neq,nja,ia,ja,amat,rhs,x,IBOUND=>active
+      USE SOLUTIONMODULE, ONLY: neq,nja,ia,ja,amat,rhs,x,IBOUND=>active
       USE SMSMODULE, ONLY: IBFLAG,BTOL,BREDUC,NUMTRACK,HCLOSE,HTEMP
       IMPLICIT NONE
       DOUBLEPRECISION, INTENT(INOUT) :: RES

@@ -6,7 +6,7 @@ C
 C        SPECIFICATIONS:
 C     ------------------------------------------------------------------
       USE SimModule
-      USE SOLUTION, ONLY: neq,nja,ia,ja,amat,rhs,x
+      USE SOLUTIONMODULE, ONLY: neq,nja,ia,ja,amat,rhs,x
       USE PCGUMODULE
       IMPLICIT NONE
 C     + + + DUMMY VARIABLES + + +
@@ -318,7 +318,7 @@ C
 C        SPECIFICATIONS:
 C     ------------------------------------------------------------------
       USE SimModule
-      USE SOLUTION, ONLY: neq,nja,ia,ja,amat,rhs,x
+      USE SOLUTIONMODULE, ONLY: neq,nja,ia,ja,amat,rhs,x
       USE PCGUMODULE
       IMPLICIT NONE
 C     + + + DUMMY ARGUMENTS + + +
@@ -937,7 +937,7 @@ C---------RETURN
       END SUBROUTINE SPCGU_ILU0A
 
       SUBROUTINE SPCGU_CG(ICNVG,ITMAX,INNERIT)
-        USE SOLUTION, ONLY: neq,nja,ia,ja,amat,rhs,x
+        USE SOLUTIONMODULE, ONLY: neq,nja,ia,ja,amat,rhs,x
         USE PCGUMODULE
         IMPLICIT NONE
 C     + + + DUMMY ARGUMENTS + + +
@@ -1042,7 +1042,7 @@ C---------RETURN
       END SUBROUTINE SPCGU_CG
 
       SUBROUTINE SPCGU_BCGS(ICNVG,ITMAX,INNERIT)
-        USE SOLUTION, ONLY: neq,nja,ia,ja,amat,rhs,x
+        USE SOLUTIONMODULE, ONLY: neq,nja,ia,ja,amat,rhs,x
         USE PCGUMODULE
         IMPLICIT NONE
 C     + + + DUMMY ARGUMENTS + + +
@@ -1456,7 +1456,7 @@ C-------CALCULATE THE RESIDUAL FOR A NODE USING CURRENT VALUES OF
 C       AMAT, X, AND THE RHS FOR THE NODE PASSED TO FUNCTION     
       DOUBLEPRECISION FUNCTION SPCGU_RES(N,IA,JA,AMAT,X,B) 
      2  RESULT(value)
-        USE SOLUTION, ONLY: neq,nja
+        USE SOLUTIONMODULE, ONLY: neq,nja
         IMPLICIT NONE
 C     + + + DUMMY ARGUMENTS + + +
         INTEGER, INTENT(IN) :: N

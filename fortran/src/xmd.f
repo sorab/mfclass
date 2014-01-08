@@ -51,7 +51,7 @@ C------------------------------------------------------------------
       SUBROUTINE XMD7U1AR(IN,IFDPARAM)
 
       USE SimModule
-      USE SOLUTION, ONLY: neq,nja,ia,ja
+      USE SOLUTIONMODULE, ONLY: neq,nja,ia,ja
       USE XMDMODULE
       USE SMSMODULE, ONLY: IPRSMS
 cmi

@@ -1,20 +1,10 @@
-MODULE SOLUTION
-  integer, save, pointer :: neq
-  integer, save, pointer :: nja
-  integer, save, pointer, dimension(:), contiguous :: ia
-  integer, save, pointer, dimension(:), contiguous :: ja
-  double precision, save, pointer, dimension(:), contiguous :: amat
-  double precision, save, pointer, dimension(:), contiguous :: rhs
-  double precision, save, pointer, dimension(:), contiguous :: x
-  integer, save, pointer, dimension(:), contiguous :: active
-END MODULE SOLUTION
 
-module SolutionModule
+module SOLUTIONMODULE
 use ModelModule
 use CrossModule
 use sparsemodule, only:sparsematrix
 use SMSMODULE
-use MSMSCLASS
+!use MSMSCLASS
 use XMDMODULE
 use MXMDCLASS
 use PCGUMODULE
@@ -26,6 +16,7 @@ public :: solutiontype
 public :: solution_create
 public :: solution_list_init
 public :: solutiongrouplist
+public :: neq,nja,ia,ja,amat,rhs,x,active
 
 type :: solutioncontainer
     class(solutiontype), pointer :: obj
@@ -40,44 +31,52 @@ type solutionlisttype
 end type solutionlisttype
 type(solutionlisttype) :: solutionlist
 
-type solutiontype
-  integer :: id
-  character(len=300) :: fname
-  integer :: iu
-  character(len=20) :: name
-!  integer :: mxiter
-!  double precision :: xtol
-  integer, pointer :: neq
-  integer, pointer :: nja
-  integer, pointer, dimension(:), contiguous :: ia
-  integer, pointer, dimension(:), contiguous :: ja
-  double precision, pointer, dimension(:), contiguous :: amat
-  double precision, pointer, dimension(:), contiguous :: rhs
-  double precision, pointer, dimension(:), contiguous :: x
-  integer, pointer, dimension(:), contiguous :: active
-  type(SMS_DATA) :: sms
-  type(XMD_DATA) :: xmd
-  type(PCGU_DATA) :: pcgu
-  !integer :: nmodels=0
-  !integer, dimension(10) :: imodels
-    type(modellisttype) :: modellist
-    type(crosslisttype) :: crosslist
-  !integer :: ncrosses=0
-  !integer, dimension(10) :: icrosses
-  type(sparsematrix) :: sparse
-  contains
-  procedure :: initialize
-  procedure :: reset
-  procedure :: addmodel
-  procedure :: addcross
-  procedure :: connect
-  procedure :: smsinit
-  procedure :: solve
-  procedure :: save
-  procedure :: PNTSAV => solution_pntsav
-  procedure :: PNTSET => solution_pntset
+  integer, save, pointer :: neq
+  integer, save, pointer :: nja
+  integer, save, pointer, dimension(:), contiguous :: ia
+  integer, save, pointer, dimension(:), contiguous :: ja
+  double precision, save, pointer, dimension(:), contiguous :: amat
+  double precision, save, pointer, dimension(:), contiguous :: rhs
+  double precision, save, pointer, dimension(:), contiguous :: x
+  integer, save, pointer, dimension(:), contiguous :: active
+  type solutiontype
+    integer :: id
+    character(len=300) :: fname
+    integer :: iu
+    character(len=20) :: name
+  !  integer :: mxiter
+  !  double precision :: xtol
+    integer, pointer :: neq
+    integer, pointer :: nja
+    integer, pointer, dimension(:), contiguous :: ia
+    integer, pointer, dimension(:), contiguous :: ja
+    double precision, pointer, dimension(:), contiguous :: amat
+    double precision, pointer, dimension(:), contiguous :: rhs
+    double precision, pointer, dimension(:), contiguous :: x
+    integer, pointer, dimension(:), contiguous :: active
+    type(SMS_DATA) :: sms
+    type(XMD_DATA) :: xmd
+    type(PCGU_DATA) :: pcgu
+    !integer :: nmodels=0
+    !integer, dimension(10) :: imodels
+      type(modellisttype) :: modellist
+      type(crosslisttype) :: crosslist
+    !integer :: ncrosses=0
+    !integer, dimension(10) :: icrosses
+    type(sparsematrix) :: sparse
+    contains
+    procedure :: initialize
+    procedure :: reset
+    procedure :: addmodel
+    procedure :: addcross
+    procedure :: connect
+    procedure :: smsinit
+    procedure :: solve
+    procedure :: save
+    procedure :: PNTSAV => solution_pntsav
+    procedure :: PNTSET => solution_pntset
   
-end type solutiontype
+  end type solutiontype
 
 type :: solutiongrouptype
     integer :: id
@@ -428,7 +427,7 @@ subroutine save(this,filename)
 end subroutine save
 
 subroutine solution_pntsav(this)
-    use SOLUTION
+    !use SOLUTION
     implicit none
     class(solutiontype) :: this
     this%neq=>neq
@@ -442,7 +441,7 @@ subroutine solution_pntsav(this)
 end subroutine solution_pntsav
 
 subroutine solution_pntset(this)
-    use SOLUTION
+    !use SOLUTION
     implicit none
     class(solutiontype) :: this
     neq=>this%neq
@@ -455,7 +454,7 @@ subroutine solution_pntset(this)
     active=>this%active
 end subroutine solution_pntset
 
-end module SolutionModule
+end module SOLUTIONMODULE
 
 
 

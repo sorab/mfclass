@@ -1,2 +1,2 @@
-python ..\..\mf2015.py
+..\..\msvs\mf2015\debug\mf2015.exe
 pause
