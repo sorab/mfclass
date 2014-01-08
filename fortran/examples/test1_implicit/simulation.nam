@@ -1,0 +1,24 @@
+#note that the order matters here
+list model.lst
+
+tdis model.tdis
+
+nmodels 2
+model model1.nam 1
+model model2.nam 2
+
+ncrosses 1
+xrs model.xrs 1 2
+
+nsolutions 1
+solution model.sms 1
+
+#nsolution_groups 1
+solution_group 1
+  mxiter 1
+  nsolutions 1
+  sms 1
+    nmodels 2
+    model 1
+    model 2
+end

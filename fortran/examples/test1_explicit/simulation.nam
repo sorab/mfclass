@@ -1,0 +1,31 @@
+#list file for solver output
+list model.lst
+
+#models
+nmodels 2
+model model1.nam 1
+model model2.nam 2
+
+#tdis
+tdis model.tdis
+
+#crosses
+ncrosses 1
+xrs model.xrs 1 2
+
+#solutions
+nsolutions 2
+solution model1.sms 1
+solution model2.sms 2
+
+#solution groups
+solution_group 1
+  mxiter 3
+  nsolutions 2
+  sms 1
+    nmodels 1
+    model 1
+  sms 2
+    nmodels 1
+    model 2
+end

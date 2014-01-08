@@ -1,0 +1,25 @@
+#models
+model model1.nam 1
+model model2.nam 2
+
+#tdis
+tdis model.tdis
+
+#crosses
+xrs model.xrs 1 2
+
+#solutions
+sms model1.sms 1
+sms model2.sms 2
+
+#solution groups
+begin solution_group 1
+  mxiter 3
+  nsolutions 2
+  sms 1
+    nmodels 1
+    model 1
+  sms 2
+    nmodels 1
+    model 2
+end

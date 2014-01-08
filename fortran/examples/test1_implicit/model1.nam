@@ -1,0 +1,8 @@
+#dis
+dis model1.dis
+
+#packages
+npackages 2
+wel model1.wel
+ghb model1.ghb
+

@@ -1,0 +1,14 @@
+#note that the order matters here
+model model1.nam 1
+model model2.nam 2
+tdis model.tdis
+xrs model.xrs 1 2
+sms model.sms 1
+begin solution_group 1
+  mxiter 1
+  nsolutions 1
+  sms 1
+    nmodels 2
+    model 1
+    model 2
+end
