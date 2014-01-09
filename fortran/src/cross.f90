@@ -29,8 +29,8 @@ type(crosslisttype) :: crosslist
 type crosstype
     character(len=20) :: name
     integer :: id
-    type(modeltype), pointer :: m1
-    type(modeltype), pointer :: m2
+    class(modeltype), pointer :: m1
+    class(modeltype), pointer :: m2
     logical :: implicit=.TRUE.
     integer :: ncross
     integer, allocatable, dimension(:) :: nodem1

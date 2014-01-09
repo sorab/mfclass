@@ -274,8 +274,8 @@ subroutine connect(this)
         call this%modellist%getmodel(mp, im)
         ipos=1
         do n=1,mp%neq
-            istart=this%ia(n+mp.offset)
-            istop=this%ia(n+mp.offset+1)-1
+            istart=this%ia(n+mp%offset)
+            istop=this%ia(n+mp%offset+1)-1
             do jj=istart,istop
                 j=abs(this%ja(jj))
                 if(j>mp%offset .and. j<=mp%offset+mp%neq) then
