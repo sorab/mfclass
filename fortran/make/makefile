@@ -1,3 +1,5 @@
+#must use gfortran 4.8.2 or later to compile this program.
+
 # Makefile example for compiling MODFLOW-2005:
 
 # Makefile for non-USGS distribution
