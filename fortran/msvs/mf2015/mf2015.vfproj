@@ -28,6 +28,8 @@
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<File RelativePath="..\..\src\cross.f90"/>
+		<File RelativePath="..\..\src\gwf_modules.f90"/>
+		<File RelativePath="..\..\src\gwf.f90"/>
 		<File RelativePath="..\..\src\loose_modules.f90"/>
 		<File RelativePath="..\..\src\mf2015.f90"/>
 		<File RelativePath="..\..\src\model.f90"/>
