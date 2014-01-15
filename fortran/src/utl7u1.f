@@ -2839,4 +2839,172 @@ C3------RETURN
       RETURN
       END
 C
+      SUBROUTINE U1DRELNJA(ARRAY,IAG,ANAME,NJAG,IN,IOUT,IDSYMRD)
+C     ******************************************************************
+C     READ SYMMETRIC SUBSURFACE PROPERTY ARRAY FOR UNSTRUCTURED GRIDS
+C     ******************************************************************
+C
+C        SPECIFICATIONS:
+C     ------------------------------------------------------------------
+      USE GLOBAL,      ONLY:IA,JA,JAS,NJAS,NODES,NEQS,NJA,ISYM
+      CHARACTER*24 ANAME
+      REAL, DIMENSION(:),ALLOCATABLE  ::TEMP,TEMPU
+      DIMENSION ARRAY(NJAS)
+      INTEGER IAG(NODES+1)
+C     ------------------------------------------------------------------
+      K = 0
+      IF(IDSYMRD.EQ.1)THEN
+C1------READ SYMMETRIC DATA
+        IF(NJA.EQ.NJAG)THEN  !
+C1A-------NO CLN OR GNC NODES SO FILL ARRAY DIRECTLY AND RETURN
+          CALL U1DREL(ARRAY,ANAME,NJAS,K,IN,IOUT)
+          RETURN
+        ENDIF
+C
+        NJAGS = (NJAG - NODES) / 2
+        ALLOCATE(TEMP(NJAGS))
+C1-------READ SYMMETRIC DATA IN TEMP LOCATION FOR SUBSURFACE NODES
+        CALL U1DREL(TEMP,ANAME,NJAGS,K,IN,IOUT)
+C1A------FILL INTO UNSYMMETRIC TEMPU LOCATION
+        ALLOCATE(TEMPU(NJAG))
+        DO N=1,NODES
+          DO II = IA(N)+1,IA(N+1)-1
+            JJ = JA(II)
+            IF(JJ.GT.N)THEN
+              IIS = JAS(II)
+              TEMPU(II) = TEMP(IIS)
+              TEMPU(ISYM(II)) = TEMP(IIS)
+            ENDIF
+          ENDDO
+        ENDDO
+        DEALLOCATE(TEMP)
+      ELSE
+C2------READ UNSYMMETRIC DATA IN TEMPU LOCATION AND TRANSFER
+        ALLOCATE(TEMPU(NJAG))
+        CALL U1DREL(TEMPU(1),ANAME,NJAG,K,IN,IOUT)
+      ENDIF
+C3------COPY ONLY UPPER TRIANGLE OF TEMPU INTO SYMMETRIC ARRAY FOR SUBSURFACE NODES
+      DO N=1,NODES
+        IAGNUM = IAG(N+1)-IAG(N)
+        IIC = 0 ! ITERATION COUNTER OF II LOOP
+C
+         DO II = IA(N), IA(N)+IAGNUM-1
+          IIC = IIC + 1
+          IIG = IAG(N)+IIC-1
+          JJ = JA(II)
+          IF(JJ.LE.N) CYCLE
+          IIS = JAS(II)
+          ARRAY(IIS) = TEMPU(IIG)
+        ENDDO
+      ENDDO
+      DEALLOCATE(TEMPU)
+C
+C4------RETURN
+      RETURN
+      END
+C
+      SUBROUTINE U1DRELNJAU(ARRAY1,ARRAY2,ANAME,IAG,NJAG,IN,IOUT)
+C     ******************************************************************
+C     READ UNSYMMETRIC SUBSURFACE PROPERTY ARRAY FOR UNSTRUCTURED GRIDS
+C     ******************************************************************
+C
+C        SPECIFICATIONS:
+C     ------------------------------------------------------------------
+      USE GLOBAL,      ONLY:IA,JA,JAS,NJAS,NODES,NEQS,NJA,ISYM
+      CHARACTER*24 ANAME
+      REAL, DIMENSION(:),ALLOCATABLE  ::TEMP,TEMPU
+      DIMENSION ARRAY1(NJAS),ARRAY2(NJAS)
+      INTEGER IAG(NODES+1)
+C     ------------------------------------------------------------------
+
+C12B-------UNSYMMETRIC MATRIX CONTAINS BOTH ARRAY1 AND ARRAY2 SO READ AND PARSE
+        ALLOCATE(TEMP(NJA))
+        K=1
+        CALL U1DREL(TEMP,ANAME,NJAG,K,IN,IOUT)
+C12C------COPY ONLY UPPER / LOWER TRIANGLES OF TEMP FOR SUBSURFACE NODES INTO SYMMETRIC ARRAYS
+        DO N=1,NODES
+          IAGNUM = IAG(N+1)-IAG(N)
+          IIC = 0 !                         ITERATION COUNTER OF II LOOP
+          DO II = IA(N),IA(N)+IAGNUM-1
+            IIC = IIC + 1
+            IIG = IAG(N)+IIC-1
+            JJ = JA(II)
+            IIS = JAS(II)
+            IF(JJ.GT.N)THEN !               ARRAY1 IS UPPER TRIANGLE
+              ARRAY1(IIS) = TEMP(IIG)
+            ELSEIF(JJ.LT.N)THEN !           ARRAY2 IS LOWER TRIANGLE
+              ARRAY2(IIS) = TEMP(IIG)
+            ENDIF
+          ENDDO
+        ENDDO
+        DEALLOCATE(TEMP)
+C
+C4------RETURN
+      RETURN
+      END
+C
+      SUBROUTINE U1DINTNJA(IARRAY,IAG,ANAME,NJAG,IN,IOUT,IDSYMRD)
+C     ******************************************************************
+C     RECORD CELL-BY-CELL FLOW TERMS FOR ONE COMPONENT OF FLOW AS A 2-D
+C     ARRAY OF FLOW VALUES AND OPTIONALLY A 2-D ARRAY OF LAYER NUMBERS
+C     ******************************************************************
+C
+C        SPECIFICATIONS:
+C     ------------------------------------------------------------------
+      USE GLOBAL,      ONLY:IA,JA,JAS,NJAS,NODES,NEQS,NJA,ISYM
+      CHARACTER*24 ANAME
+      INTEGER, DIMENSION(:),ALLOCATABLE  ::ITEMP,ITEMPU
+      INTEGER IARRAY(NJAS)
+      INTEGER IAG(NODES+1)
+C     ------------------------------------------------------------------
+      K = 0
+      IF(IDSYMRD.EQ.1)THEN
+C1------READ SYMMETRIC DATA
+        IF(NJA.EQ.NJAG)THEN  !
+C1A-------NO CLN OR GNC NODES SO FILL ARRAY DIRECTLY AND RETURN
+          CALL U1DINT(IARRAY,ANAME,NJAS,K,IN,IOUT)
+          RETURN
+        ENDIF
+C
+        NJAGS = (NJAG - NODES) / 2
+        ALLOCATE(ITEMP(NJAGS))
+C1-------READ SYMMETRIC DATA IN TEMP LOCATION FOR SUBSURFACE NODES
+        CALL U1DINT(ITEMP,ANAME,NJAGS,K,IN,IOUT)
+C1A------FILL INTO UNSYMMETRIC TEMPU LOCATION
+        ALLOCATE(ITEMPU(NJAG))
+        DO N=1,NODES
+          DO II = IA(N)+1,IA(N+1)-1
+            JJ = JA(II)
+            IF(JJ.GT.N)THEN
+              IIS = JAS(II)
+              ITEMPU(II) = ITEMP(IIS)
+              ITEMPU(ISYM(II)) = ITEMP(IIS)
+            ENDIF
+          ENDDO
+        ENDDO
+        DEALLOCATE(ITEMP)
+      ELSE
+C2------READ UNSYMMETRIC DATA IN TEMPU LOCATION AND TRANSFER
+        ALLOCATE(ITEMPU(NJAG))
+        CALL U1DINT(ITEMPU(1),ANAME,NJAG,K,IN,IOUT)
+      ENDIF
+C3------COPY ONLY UPPER TRIANGLE OF TEMPU INTO SYMMETRIC ARRAY FOR SUBSURFACE NODES
+      DO N=1,NODES
+        IAGNUM = IAG(N+1)-IAG(N)
+        IIC = 0 ! ITERATION COUNTER OF II LOOP
+C
+         DO II = IA(N), IA(N)+IAGNUM-1
+          IIC = IIC + 1
+          IIG = IAG(N)+IIC-1
+          JJ = JA(II)
+          IF(JJ.LE.N) CYCLE
+          IIS = JAS(II)
+          IARRAY(IIS) = ITEMPU(IIG)
+        ENDDO
+      ENDDO
+      DEALLOCATE(ITEMPU)
+C
+C3------RETURN
+      RETURN
+      END
 

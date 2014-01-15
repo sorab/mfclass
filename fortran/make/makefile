@@ -30,25 +30,35 @@ USRLIB  =
 
 # Define all Fortran object files which make up MODFLOW
 
+
+
 OBJECTS = \
+        loose_modules.o \
         utl7u1.o \
         parutl7.o \
-        loose_modules.o \
         xmdlib_2.o \
         sms_modules.o \
         xmd_modules.o \
         package.o \
         pcgu_modules.o \
+        tdis.o \
         sparse.o \
+        gwf3_glomodule.o \
+        gwf3_basmodule.o \
+        gwf3_bcfmodule.o \
+        cln_glomodule.o \
         package_wel.o \
         package_ghb.o \
         model.o \
+        gwf3.o \
         cross.o \
         soln.o \
+        mf2015.o \
         sms7.o \
         xmd.o \
         pcgu7.o \
-        mf2015.o \
+        gwf3_glo.o \
+        gwf3_bas.o \
         
 
 

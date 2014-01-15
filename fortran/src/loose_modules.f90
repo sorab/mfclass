@@ -1,7 +1,7 @@
-MODULE SimModule
-  implicit none
-  integer :: iout
-END MODULE SimModule
+!MODULE SimModule
+!  implicit none
+!  integer :: iout
+!END MODULE SimModule
 
 
 

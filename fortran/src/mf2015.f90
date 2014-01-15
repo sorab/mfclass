@@ -1,3 +1,9 @@
+MODULE SimModule
+  implicit none
+  integer :: iout
+END MODULE SimModule
+
+
 
 program mf2015fort
 ! ******************************************************************************
@@ -6,6 +12,7 @@ program mf2015fort
 ! 
 !    SPECIFICATIONS:
 ! ------------------------------------------------------------------------------
+  use SimModule
   use SolutionModule
   use ModelModule
   use CrossModule
@@ -18,6 +25,8 @@ program mf2015fort
   CHARACTER*10 MFVNAM
   PARAMETER (VERSION='0.1.00 01/14/2014')
   PARAMETER (MFVNAM='-2015')
+  INTEGER :: IBDT(8)
+  INTEGER :: I
 ! ------------------------------------------------------------------------------
 !
 ! -- Write banner to screen and define constants
@@ -27,8 +36,14 @@ program mf2015fort
   ' GROUNDWATER FLOW MODEL',/,29X,'Version ',A/)
   nsg=1  !hardwire the number of solution groups
 
+! -- Get current date and time, assign to IBDT, and write to screen
+      CALL DATE_AND_TIME(VALUES=IBDT)
+      WRITE(*,2) (IBDT(I),I=1,3),(IBDT(I),I=5,7)
+    2 FORMAT(1X,'Run start date and time (yyyy/mm/dd hh:mm:ss): ',             &
+      I4,'/',I2.2,'/',I2.2,1X,I2,':',I2.2,':',I2.2,/)
+
   ! -- Read the name file and initialize instances
-  call initialize('simulation.nam')
+  call simulation_init('simulation.nam')
   !
   ! -- Initialize each solution in solutionlist
   do is=1,solutionlist%nsolutions
@@ -62,7 +77,7 @@ program mf2015fort
   enddo
   !
   ! -- Run the connect routines for each solution.  The connect routines build the
-  ! -- global ia and ja solution arrays as well as the mapping arrays for each
+  ! -- solution ia and ja arrays as well as the mapping arrays for each
   ! -- model that is part the solution.
   do is=1,solutionlist%nsolutions
     call solutionlist%getsolution(s,is)
@@ -90,12 +105,16 @@ program mf2015fort
     call solutionlist%getsolution(s,is)
     call s%save('output.dat')
   enddo
+
+  CALL GLO1BAS6ET(IOUT,IBDT,1)
+
+! -- Deallocate everything here
     
   print *, 'ending...'
 
 end program mf2015fort
 
-subroutine initialize(simfile)
+subroutine simulation_init(simfile)
 ! ******************************************************************************
 ! Read the simulation name file and initialize the models, crosses
 ! ******************************************************************************
@@ -103,8 +122,10 @@ subroutine initialize(simfile)
 !    SPECIFICATIONS:
 ! ------------------------------------------------------------------------------
   use SimModule
+  use TdisModule
   use SolutionModule
   use ModelModule
+  use GWFModule
   use CrossModule
   implicit none
   character(len=*),intent(in) :: simfile
@@ -155,7 +176,18 @@ subroutine initialize(simfile)
       fname=line(ityp1:ityp2)
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,id,R,IOUT,INUNIT)
       call model_create(fname,id)
-    !    
+    !
+    elseif(filtyp=='GWFMODEL') then
+      CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
+      fname=line(ityp1:ityp2)
+      CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,id,R,IOUT,INUNIT)
+      call gwfmodel_create(fname,id)
+    !
+    elseif(filtyp=='TDIS') then
+      CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
+      fname=line(ityp1:ityp2)
+      call tdis_ar(fname,iout)
+    !
     !set nsolutions
     elseif(filtyp.eq.'NSOLUTIONS') then
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,nsolutions,R,IOUT,INUNIT)
@@ -207,7 +239,7 @@ subroutine initialize(simfile)
 100 exit        
   enddo
   close(inunit)
-end subroutine initialize
+end subroutine simulation_init
 
 subroutine freeunitnumber(iu)
 ! ******************************************************************************
@@ -232,3 +264,111 @@ subroutine freeunitnumber(iu)
   nextunitnumber=i
   iu=nextunitnumber
 end subroutine freeunitnumber
+
+      SUBROUTINE GLO1BAS6ET(IOUT,IBDT,IPRTIM)
+!     ******************************************************************
+!     Get end time and calculate elapsed time
+!     ******************************************************************
+!
+!        SPECIFICATIONS:
+!     ------------------------------------------------------------------
+      INTEGER IBDT(8), IEDT(8), IDPM(12)
+      DATA IDPM/31,28,31,30,31,30,31,31,30,31,30,31/ ! Days per month
+      DATA NSPD/86400/  ! Seconds per day
+!     ------------------------------------------------------------------
+!
+!     Get current date and time, assign to IEDT, and write.
+      CALL DATE_AND_TIME(VALUES=IEDT)
+      WRITE(*,1000) (IEDT(I),I=1,3),(IEDT(I),I=5,7)
+ 1000 FORMAT(1X,'Run end date and time (yyyy/mm/dd hh:mm:ss): ',               &
+             I4,'/',I2.2,'/',I2.2,1X,I2,':',I2.2,':',I2.2)
+      IF(IPRTIM.GT.0) THEN
+        WRITE(IOUT,'(1X)')
+        WRITE(IOUT,1000) (IEDT(I),I=1,3),(IEDT(I),I=5,7)
+      END IF
+!
+!     Calculate elapsed time in days and seconds
+      NDAYS=0
+      LEAP=0
+      IF (MOD(IEDT(1),4).EQ.0) LEAP = 1
+      IBD = IBDT(3)            ! BEGIN DAY
+      IED = IEDT(3)            ! END DAY
+!     FIND DAYS
+      IF (IBDT(2).NE.IEDT(2)) THEN
+!       MONTHS DIFFER
+        MB = IBDT(2)             ! BEGIN MONTH
+        ME = IEDT(2)             ! END MONTH
+        NM = ME-MB+1             ! NUMBER OF MONTHS TO LOOK AT
+        IF (MB.GT.ME) NM = NM+12
+        MC=MB-1
+        DO 10 M=1,NM
+          MC=MC+1                ! MC IS CURRENT MONTH
+          IF (MC.EQ.13) MC = 1
+          IF (MC.EQ.MB) THEN
+            NDAYS = NDAYS+IDPM(MC)-IBD
+            IF (MC.EQ.2) NDAYS = NDAYS + LEAP
+          ELSEIF (MC.EQ.ME) THEN
+            NDAYS = NDAYS+IED
+          ELSE
+            NDAYS = NDAYS+IDPM(MC)
+            IF (MC.EQ.2) NDAYS = NDAYS + LEAP
+          ENDIF
+   10   CONTINUE
+      ELSEIF (IBD.LT.IED) THEN
+!       START AND END IN SAME MONTH, ONLY ACCOUNT FOR DAYS
+        NDAYS = IED-IBD
+      ENDIF
+      ELSEC=NDAYS*NSPD
+!
+!     ADD OR SUBTRACT SECONDS
+      ELSEC = ELSEC+(IEDT(5)-IBDT(5))*3600.0
+      ELSEC = ELSEC+(IEDT(6)-IBDT(6))*60.0
+      ELSEC = ELSEC+(IEDT(7)-IBDT(7))
+      ELSEC = ELSEC+(IEDT(8)-IBDT(8))*0.001
+!
+!     CONVERT SECONDS TO DAYS, HOURS, MINUTES, AND SECONDS
+      NDAYS = ELSEC/NSPD
+      RSECS = MOD(ELSEC,86400.0)
+      NHOURS = RSECS/3600.0
+      RSECS = MOD(RSECS,3600.0)
+      NMINS = RSECS/60.0
+      RSECS = MOD(RSECS,60.0)
+      NSECS = RSECS
+      RSECS = MOD(RSECS,1.0)
+      MSECS = NINT(RSECS*1000.0)
+      NRSECS = NSECS
+      IF (RSECS.GE.0.5) NRSECS=NRSECS+1
+!
+!     Write elapsed time to screen
+        IF (NDAYS.GT.0) THEN
+          WRITE(*,1010) NDAYS,NHOURS,NMINS,NRSECS
+ 1010     FORMAT(1X,'Elapsed run time: ',I3,' Days, ',I2,' Hours, ',I2,        &
+            ' Minutes, ',I2,' Seconds',/)
+        ELSEIF (NHOURS.GT.0) THEN
+          WRITE(*,1020) NHOURS,NMINS,NRSECS
+ 1020     FORMAT(1X,'Elapsed run time: ',I2,' Hours, ',I2,                     &
+            ' Minutes, ',I2,' Seconds',/)
+        ELSEIF (NMINS.GT.0) THEN
+          WRITE(*,1030) NMINS,NSECS,MSECS
+ 1030     FORMAT(1X,'Elapsed run time: ',I2,' Minutes, ',                      &
+            I2,'.',I3.3,' Seconds',/)
+        ELSE
+          WRITE(*,1040) NSECS,MSECS
+ 1040     FORMAT(1X,'Elapsed run time: ',I2,'.',I3.3,' Seconds',/)
+        ENDIF
+!
+!     Write times to file if requested
+      IF(IPRTIM.GT.0) THEN
+        IF (NDAYS.GT.0) THEN
+          WRITE(IOUT,1010) NDAYS,NHOURS,NMINS,NRSECS
+        ELSEIF (NHOURS.GT.0) THEN
+          WRITE(IOUT,1020) NHOURS,NMINS,NRSECS
+        ELSEIF (NMINS.GT.0) THEN
+          WRITE(IOUT,1030) NMINS,NSECS,MSECS
+        ELSE
+          WRITE(IOUT,1040) NSECS,MSECS
+        ENDIF
+      ENDIF
+!
+      RETURN
+      END

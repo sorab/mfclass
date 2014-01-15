@@ -4,7 +4,7 @@
 		<Platform Name="Win32"/></Platforms>
 	<Configurations>
 		<Configuration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" WarnInterfaces="true" Traceback="true" BoundsCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Traceback="true" BoundsCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
 				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" SubSystem="subSystemConsole"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
@@ -27,9 +27,14 @@
 		<Filter Name="Header Files" Filter="fi;fd"/>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
+		<File RelativePath="..\..\src\cln_glomodule.f90"/>
 		<File RelativePath="..\..\src\cross.f90"/>
-		<File RelativePath="..\..\src\gwf_modules.f90"/>
-		<File RelativePath="..\..\src\gwf.f90"/>
+		<File RelativePath="..\..\src\gwf3.f90"/>
+		<File RelativePath="..\..\src\gwf3_bas.f"/>
+		<File RelativePath="..\..\src\gwf3_glo.f"/>
+		<File RelativePath="..\..\src\gwf3_basmodule.f90"/>
+		<File RelativePath="..\..\src\gwf3_bcfmodule.f90"/>
+		<File RelativePath="..\..\src\gwf3_glomodule.f90"/>
 		<File RelativePath="..\..\src\loose_modules.f90"/>
 		<File RelativePath="..\..\src\mf2015.f90"/>
 		<File RelativePath="..\..\src\model.f90"/>
@@ -43,6 +48,7 @@
 		<File RelativePath="..\..\src\sms_modules.f90"/>
 		<File RelativePath="..\..\src\soln.f90"/>
 		<File RelativePath="..\..\src\sparse.f90"/>
+		<File RelativePath="..\..\src\tdis.f90"/>
 		<File RelativePath="..\..\src\utl7u1.f"/>
 		<File RelativePath="..\..\src\xmd.f"/>
 		<File RelativePath="..\..\src\xmd_modules.f90"/>
