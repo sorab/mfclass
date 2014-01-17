@@ -34,7 +34,7 @@ subroutine wel_ar(this,fname,id)
     print *,'Creating well package: ', id
     call freeunitnumber(this%inunit)
     print *, 'opening model namefile on unit: ', this%inunit
-    open(unit=this%inunit,file=fname)
+    open(unit=this%inunit,file=fname,status='old')
     read(this%inunit,*) maxbound
     !
     !allocate package members

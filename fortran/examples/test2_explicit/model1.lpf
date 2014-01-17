@@ -1,0 +1,11 @@
+50 -888.88 0 0 novfc constantcv 
+1 
+0 
+1 
+0 
+0 
+internal 1 (free) -1 hk(NDSLAY) K = 1
+10 10 10 10 10 10 10 10 10 
+constant 1.0 vka(NDSLAY) K = 1
+constant 1e-05 ss(NDSLAY) K = 1
+constant 0.2 sy(NDSLAY) K = 1

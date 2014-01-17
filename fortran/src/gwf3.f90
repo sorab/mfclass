@@ -2,10 +2,14 @@ module gwfmodule
   use ModelModule
   use PackageModule
   use global,only:gwfglotype
+  use GWFBASMODULE,only:gwfbastype
+  use GWFBCFMODULE,only:gwfbcftype
   private
   public :: gwfmodel_create
   type, extends(modeltype) :: gwfmodeltype
-    type(gwfglotype) :: gwf_data
+    type(gwfglotype) :: gwfglodat
+    type(gwfbastype) :: gwfbasdat
+    type(gwfbcftype) :: gwfbcfdat
   end type gwfmodeltype
 
   contains
@@ -28,7 +32,7 @@ module gwfmodule
     call freeunitnumber(inunit)
     print *, 'opening model namefile on unit: ', inunit
     
-    open(unit=inunit,file=filename)
+    open(unit=inunit,file=filename,status='old')
     ipak=1
     do
       !read line and skip if necessary
@@ -41,7 +45,12 @@ module gwfmodule
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,1,N,R,IOUT,INUNIT)
       filtyp=line(ityp1:ityp2)
       !
-      if(filtyp.eq.'DIS') then
+      if(filtyp.eq.'BAS6') then
+        CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
+        fname=line(ityp1:ityp2)
+        call gwfmodel%disread(fname,id)
+      !
+      elseif(filtyp.eq.'DIS') then
         CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
         fname=line(ityp1:ityp2)
         call gwfmodel%disread(fname,id)
