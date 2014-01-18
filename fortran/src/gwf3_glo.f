@@ -1,3 +1,647 @@
+      SUBROUTINE GWF3DIS9AR(INDIS,IOUTSIM,IUNSTRTMP)
+      USE GLOBAL, ONLY:NCOL,NROW,NLAY,NPER,ITMUNI,NJA,NJAS,NJAG,
+     1          IVSD,LENUNI,IXSEC,ITRSS,INBAS,IFREFM,NODES,IOUT,
+     2          IUNIT,NIUNIT,HNEW,LAYHDT,LAYHDS,NODLAY,NBOTM,
+     3          PERLEN,NSTP,TSMULT,ISSFLG,IUNSTR,MXNODLAY,NCNFBD,
+     4          HOLD,IBOUND,RHS,AMAT,BUFF,STRT,IPRCONN,IDSYMRD,ILAYCON4,
+     5          IDEALLOC_LPF,IDEALLOC_HY,INCLN,INGNC,INGNC2,INGNCn,
+     6          ITRNSP,Sn,So,NEQS,ISYMFLG,WADIEPS,IWADI,IWADICLN,iunsat
+      IMPLICIT NONE
+      INTEGER,INTENT(IN) :: INDIS,IOUTSIM,IUNSTRTMP
+      INTEGER :: IUCLN,IUGNC,IUGNC2,IUGNCN !langevin todo:will need to delete these
+C     ------------------------------------------------------------------
+C1------Allocate and initialize scalar variables.
+      allocate(iunsat)
+      iunsat = 0 ! unsat formulation 
+      ALLOCATE(NCOL,NROW,NLAY,NPER,NBOTM,NCNFBD,ITMUNI,LENUNI,ITRSS)
+      ALLOCATE(NJA,NJAS,NJAG,ILAYCON4,WADIEPS,IWADI,IWADICLN)
+      ALLOCATE(IXSEC,INBAS,IFREFM,NODES,IOUT,MXNODLAY,IUNSTR,IVSD)
+      ALLOCATE(IDEALLOC_LPF,IDEALLOC_HY,ITRNSP,NEQS,IDSYMRD,IPRCONN)
+      ALLOCATE(INCLN,INGNC,INGNC2,INGNCn,ISYMFLG)
+      INCLN = 0
+      INGNC = 0
+      INGNC2 = 0
+      INGNCn = 0
+      IDEALLOC_HY = 0
+      IDEALLOC_LPF = 0
+      IWADI = 0 
+      IWADICLN = 0
+C
+!!langevin mf2015 set gwf iout to ioutsim for now.  
+!!langevin mf2015 todo: decide if we want separate iout for each model
+      IOUT=IOUTSIM
+      IUNSTR=IUNSTRTMP
+C
+C2------ALLOCATE AND READ THE DISCRETIZATION INFORMATION
+      iucln=1
+      iugnc=1
+      iugnc2=1
+      iugncn=1
+      CALL SGWF3DIS9AR(INDIS,IOUT,IUCLN,IUGNC,IUGNC2,IUGNCn)
+C
+C3------RETURN
+      RETURN
+      END SUBROUTINE GWF3DIS9AR
+      
+      SUBROUTINE SGWF3DIS9AR(INDIS,IOUT,IUCLN,IUGNC,IUGNC2,IUGNCn)
+C     *****************************************************************
+C     ALLOCATE AND READ DISCRETIZATION DATA FOR ALL PROCESS DOMAINS,
+C     SET GLOBAL PARAMETERS, CONNECTIVITIES AND GEOMETRIC ARRAYS.
+C     *****************************************************************
+C
+C        SPECIFICATIONS:
+C     ------------------------------------------------------------------
+      USE GLOBAL, ONLY:NPER,NCNFBD,ITMUNI,IXSEC,INGNC,INGNC2,INGNCn,
+     1            INCLN,LENUNI,IUNIT,ITRSS,NODES,NODLAY,LAYCBD,INBAS,
+     2            PERLEN,NSTP,TSMULT,ISSFLG,BOT,TOP,IUNSTR,AMAT,AREA,
+     3            IVC,IA,JA,JAS,ISYM,NJA,NJAG,IVSD,DELC,DELR,IPRCONN,
+     4            IBOUND,MXNODLAY,ICONCV,NOCVCO,NEQS,IFREFM,IDSYMRD,
+     5            IATMP,NJATMP,IAG,PGF,FAHL,NJAS,NLAY,JAFL
+      USE CLN1MODULE, ONLY: NCLNNDS
+C
+      CHARACTER*200 LINE
+      CHARACTER*24 ANAME
+      DATA ANAME /'VERT CONNECT INDEX ARRAY'/
+C
+C     --------------------------------------------------------------------------------
+C1----READ GLOBAL PARAMETERS, UNSTRUCTURED GRID DIMENSIONING AND CONFINING INFORMATION
+C    ---------------------------------------------------------------------------------
+      CALL SGWF3DIS9READ(INDIS,IOUT)
+C----------------------------------------------------------------------------
+C2------READ CONNECTED LINE NETWORK (CLN) DIMENSIONING AND CONNECTIVITY INPUT
+C----------------------------------------------------------------------------
+      NEQS = NODES
+!!langevin mf2015      INCLN = IUNIT(IUCLN)
+!!langevin mf2015      IF(INCLN.NE.0) THEN 
+!!langevin mf2015        CALL SDIS2CLN1AR(IUCLN)
+!!langevin mf2015        NEQS = NEQS + NCLNNDS
+!!langevin mf2015      ENDIF
+C---------------------------------------------------------------------
+C3-----READ GNC PACKAGE INPUT  (CONNECTIVITIES AND FRACTIONS)
+C---------------------------------------------------------------------
+!!langevin mf2015      INGNC = IUNIT(IUGNC)
+csp      IF(INGNC.GT.0) THEN
+csp        CALL GNC2DISU1AR(IUGNC)
+csp      ENDIF 
+!!langevin mf2015      INGNC2 = IUNIT(IUGNC2)     
+csp      IF(INGNC2.GT.0) THEN
+csp        CALL GNCT2DISU1AR(IUGNC2)
+csp      ENDIF 
+!!langevin mf2015      INGNCn = IUNIT(IUGNCn)
+!!langevin mf2015      IF(INGNCn.GT.0) THEN
+!!langevin mf2015        CALL GNCn2DISU1AR(IUGNCn)
+!!langevin mf2015      ENDIF           
+C--------------------------------------------------------------------------------------
+C4-------REIDENTIFY MAIN PACKAGE AFTER READING BASIC INFORMATION FOR ALL PROCESS DOMAINS
+C--------------------------------------------------------------------------------------
+!!langevin mf2015      INDIS=IUNIT(IUDIS)
+      WRITE(IOUT,11) INDIS
+   11 FORMAT(1X,/1X,'DIS -- UNSTRUCTURED GRID DISCRETIZATION PACKAGE,',
+     1  ' VERSION 1 : 5/17/2010 - INPUT READ FROM UNIT ',I4)
+C--------------------------------------------------------------------------------------      
+C5------ALLOCATE SPACE FOR PARAMETERS AND FLAGS.
+      ALLOCATE(IA(NEQS+1))
+      ALLOCATE (IBOUND(NEQS))
+      ALLOCATE(AREA(NEQS))
+      IA = 0      
+C
+C-------------------------------------------------------------------------
+C6-------FILL NODLAY ARRAY AND READ GEOMETRIC PARAMETERS 
+C6-------AND MATRIX CONNECTIVITY FOR THE 3-D SUBSURFACE DOMAIN
+      IF(IUNSTR.EQ.0)THEN
+C6A-----...FOR STRUCTURED 3-D GRID with MF2005 INPUT STRUCTURE      
+        CALL SGWF2DIS8SR(IOUT,INDIS)
+      ELSE
+C6B-----...FOR UNSTRUCTURED 3-D GRID      
+        CALL SGWF2DIS8UR(IOUT,INDIS)
+      ENDIF
+C 
+C---------------------------------------------------------------------------------
+C7-------NEED NEW IA JA MATRICES WHEN CONNECTIVITY IS EXPANDED DUE TO CLN OR GNC 
+C--------------------------------------------------------------------------------- 
+C7A------WHEN CONNECTIVITY IS EXPANDED, THEN SAVE BASIC SUBSURFACE DOMAIN IA IN IAG
+C7A------(CONNECTIVITY IS EXPANDED WHEN OTHER PROCESS DOMAINS EXIST OR IF GNC IS USED)
+      IF(INCLN.NE.0.OR.INGNC.NE.0.OR.INGNC2.NE.0.OR.INGNCn.NE.0) THEN  
+        ALLOCATE(IAG(NODES+1))
+        DO I=1,NODES+1
+          IAG(I) = IA(I)
+        ENDDO
+C7A1------ALSO ALLOCATE SPACE FOR ORIGINAL JA REQUIRED TO SORT C-B-C OUTPUT        
+        ALLOCATE (JAFL(NJA+1))
+        JAFL = JA        
+C---------------------------------------------------------------------------------
+C7B-------IF CLN DOMAIN IS ACTIVE THEN ADD ITS NODES TO IA AND JA
+        IF(INCLN.NE.0) THEN
+!!langevin mf2015          CALL ADDIAJA_CLN
+        ENDIF
+C---------------------------------------------------------------------------------
+C7C-------IF GNC DOMAIN IS ACTIVE THEN ADD ITS CONNECTIONS TO IA AND JA
+csp        IF(INGNC.NE.0) THEN
+csp          CALL ADDIAJA_GNC
+csp        ENDIF    
+csp        IF(INGNC2.NE.0) THEN
+csp          CALL ADDIAJA_GNCT
+csp        ENDIF
+        IF(INGNCn.NE.0) THEN
+!!langevin mf2015          CALL ADDIAJA_GNCn
+        ENDIF
+C7D-------PRINT NEW IA AND JA INFORMATION IF PRINTFV OPTION IS SET 
+        IF(IPRCONN.NE.0)THEN
+          WRITE(IOUT,54)NEQS,NJA
+54        FORMAT(1X,'NEQS = ',I10,';  NJA = ',I10,';')
+          WRITE(IOUT,*)'IA IS BELOW, 40I10'
+          WRITE(IOUT,55)(IA(I),I=1,NEQS+1)
+          WRITE(IOUT,*)'JA IS BELOW, 40I10'
+          WRITE(IOUT,55)(JA(J),J=1,NJA)
+55        FORMAT(40I10)
+        ENDIF
+      ELSE
+        JAFL => JA
+      ENDIF        
+C---------------------------------------------------------------------------------
+C-------MAKE DIAGONALS OF JA POSITIVE  ***** SHOULD ALREADY BE POSITIVE. 
+C      DO N=1,NODES
+C        IDIAG = IA(N)
+C        JA(IDIAG) = IABS (JA(IDIAG))
+C      ENDDO
+C
+C8-------ALLOCATE ISYM AND FILL ISYM AND JAS
+      ALLOCATE(ISYM(NJA))
+      CALL FILLISYM 
+C9------ALLOCATE SYMMETRIC AND UNSYMMETRIC GLOBAL ARRAYS            
+      ALLOCATE(PGF(NJAS),FAHL(NJAS))
+      PGF=0.0
+      FAHL=0.0
+      ALLOCATE(IVC(NJAS))
+      IVC = 0
+      ALLOCATE (AMAT(NJA))
+      AMAT = 0.0
+      IF(NJA.EQ.NJAG)THEN
+        IATMP => IA
+        NJATMP=> NJA
+      ELSE
+        IATMP => IAG
+        NJATMP=> NJAG
+      ENDIF
+C------------------------------------------------------------------------
+C10-----FILL VERTICAL CONNECTION ARRAY IVC.
+      IF(IVSD.LE.0)THEN
+C10A------compute IVC for IVSD. LE. 0
+        DO K=1,NLAY
+          NNDLAY = NODLAY(K)
+          NSTRT = NODLAY(K-1)+1
+          DO N=NSTRT,NNDLAY
+C10A1-----LOOP OVER CONNECTIONS OF NODE N AND FILL
+          DO II = IA(N)+1,IA(N+1)-1
+            JJ = JA(II)
+            IIS = JAS(II)
+            IF(JJ.LE.N.OR.JJ.GT.NODES) CYCLE
+            IF(JJ.GT.NNDLAY)THEN
+              IVC(IIS) = 1  ! LAYER IS BELOW
+            ELSE
+              IVC(IIS) = 0
+            ENDIF
+          ENDDO
+          ENDDO
+        ENDDO
+      ELSE
+C10B----read IVC, for IVSD. GT. 0.
+        IF(NLAY.GT.1) 
+     *  CALL U1DINTNJA(IVC,IATMP,ANAME,NJATMP,INDIS,IOUT,IDSYMRD)
+      ENDIF
+C      
+C--------------------------------------------------------------------------
+C11------FILL PROPERTIES OF CONNECTIONS IN RESPECTIVE ARRAYS
+C--------------------------------------------------------------------------
+      IF(IUNSTR.EQ.0)THEN 
+C11A---FILL GEOMETRIC FACTOR AND PL, CL1, CL2 ARRAYS FOR STRUCTURED GRID
+        CALL FILLGFS(IOUT) 
+      ELSE
+C11B---READ PL, CL1, CL2 ARRAYS AND FILL GEOMETRIC FACTOR FOR UNSTRUCTURED GRID
+        CALL FILLGFU(INDIS,IOUT) 
+      ENDIF      
+C
+C------------------------------------------------------------------------
+C12-----READ AND WRITE LENGTH OF STRESS PERIOD, NUMBER OF TIME STEPS,
+C12-----TIME STEP MULTIPLIER, AND STEADY-STATE FLAG..
+      WRITE(IOUT,161)
+  161 FORMAT(1X,//1X,'STRESS PERIOD     LENGTH       TIME STEPS',
+     1            '     MULTIPLIER FOR DELT    SS FLAG',/1X,76('-'))
+      ISS=0
+      ITR=0
+      DO 200 N=1,NPER
+      READ(INDIS,'(A)') LINE
+      LLOC=1
+      CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,PERLEN(N),IOUT,INDIS)
+      CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,NSTP(N),R,IOUT,INDIS)
+      CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,TSMULT(N),IOUT,INDIS)
+      CALL URWORD(LINE,LLOC,ISTART,ISTOP,1,I,R,IOUT,INDIS)
+      IF (LINE(ISTART:ISTOP).EQ.'TR') THEN
+         ISSFLG(N)=0
+         ITR=1
+      ELSE IF (LINE(ISTART:ISTOP).EQ.'SS') THEN
+         ISSFLG(N)=1
+         ISS=1
+      ELSE
+         WRITE(IOUT,162)
+  162    FORMAT(' SSFLAG MUST BE EITHER "SS" OR "TR"',
+     1      ' -- STOP EXECUTION (SGWF2BAS7U1ARDIS)')
+         CALL USTOP(' ')
+      END IF
+      WRITE (IOUT,163) N,PERLEN(N),NSTP(N),TSMULT(N),LINE(ISTART:ISTOP)
+  163 FORMAT(1X,I8,1PG21.7,I7,0PF25.3,A11)
+C
+C13-----STOP IF NSTP LE 0, PERLEN EQ 0 FOR TRANSIENT STRESS PERIODS,
+C13-----TSMULT LE 0, OR PERLEN LT 0..
+      IF(NSTP(N).LE.0) THEN
+         WRITE(IOUT,164)
+  164    FORMAT(1X,/1X,
+     1  'THERE MUST BE AT LEAST ONE TIME STEP IN EVERY STRESS PERIOD')
+         CALL USTOP(' ')
+      END IF
+      ZERO=0.
+      IF(PERLEN(N).EQ.ZERO .AND. ISSFLG(N).EQ.0) THEN
+         WRITE(IOUT,165)
+  165    FORMAT(1X,/1X,
+     1  'PERLEN MUST NOT BE 0.0 FOR TRANSIENT STRESS PERIODS')
+         CALL USTOP(' ')
+      END IF
+      IF(TSMULT(N).LE.ZERO) THEN
+         WRITE(IOUT,170)
+  170    FORMAT(1X,/1X,'TSMULT MUST BE GREATER THAN 0.0')
+         CALL USTOP(' ')
+      END IF
+      IF(PERLEN(N).LT.ZERO) THEN
+         WRITE(IOUT,175)
+  175    FORMAT(1X,/1X,
+     1  'PERLEN CANNOT BE LESS THAN 0.0 FOR ANY STRESS PERIOD')
+         CALL USTOP(' ')
+      END IF
+  200 CONTINUE
+C
+C14-----Assign ITRSS.
+      IF(ISS.EQ.0 .AND. ITR.NE.0) THEN
+         ITRSS=1
+         WRITE(IOUT,270)
+  270    FORMAT(/,1X,'TRANSIENT SIMULATION')
+      ELSE IF(ISS.NE.0 .AND. ITR.EQ.0) THEN
+         ITRSS=0
+         WRITE(IOUT,275)
+  275    FORMAT(/,1X,'STEADY-STATE SIMULATION')
+      ELSE
+         ITRSS=-1
+         WRITE(IOUT,280)
+  280    FORMAT(/,1X,'COMBINED STEADY-STATE AND TRANSIENT SIMULATION')
+      END IF
+C
+C15-----RETURN.
+      RETURN
+      END      
+
+      
+      SUBROUTINE SGWF3DIS9READ(INDIS,IOUT)
+C     *****************************************************************
+C     READ GLOBAL DATA ALLOCATE SPACE FOR 3-D DOMAIN PARAMETERS, 
+C     AND READ CONFINING BED INFORMATION ARRAY, LAYCBD
+C     *****************************************************************
+C
+C        SPECIFICATIONS:
+C     ------------------------------------------------------------------
+      USE GLOBAL, ONLY:NCOL,NROW,NLAY,NPER,NBOTM,NCNFBD,ITMUNI,IXSEC,
+     1            LENUNI,IUNIT,ITRSS,NODES,NODLAY,LAYCBD,INBAS,IVC,
+     2            PERLEN,NSTP,TSMULT,ISSFLG,BOT,TOP,IUNSTR,AMAT,AREA,
+     3            IA,JA,JAS,ISYM,NJA,NJAG,IVSD,DELC,DELR,IPRCONN,
+     4            IBOUND,MXNODLAY,ICONCV,NOCVCO,NEQS,IFREFM,IDSYMRD,
+     5            IATMP,NJATMP,NOVFC 
+      CHARACTER*200 LINE      
+C
+C1------Check for existence of discretization file
+!!langevin mf2015      INDIS=IUNIT(IUDIS)
+      IF(INDIS.LE.0) THEN
+         WRITE(IOUT,*) ' DIS file must be specified for MODFLOW to run'
+         CALL USTOP(' ')
+      END IF
+C2-------IDENTIFY PACKAGE
+      WRITE(IOUT,11) INDIS
+   11 FORMAT(1X,/1X,'DIS -- UNSTRUCTURED GRID DISCRETIZATION PACKAGE,',
+     1  ' VERSION 1 : 5/17/2010 - INPUT READ FROM UNIT ',I4)
+C
+C
+C3------Read comments and the first line following the comments.
+      CALL URDCOM(INDIS,IOUT,LINE)
+C
+C4------Get the grid size, stress periods, and options like
+C4------ITMUNI, and LENUNI from first line.
+      LLOC=1
+      IVSD=0
+      IF(IUNSTR.EQ.0)IVSD = -1
+      IF(IUNSTR.EQ.0)THEN
+C4A-----FOR STRUCTURED GRID READ NLAY, NROW AND NCOL
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,NLAY,R,IOUT,INDIS)
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,NROW,R,IOUT,INDIS)
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,NCOL,R,IOUT,INDIS)
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,NPER,R,IOUT,INDIS)
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ITMUNI,R,IOUT,INDIS)
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,LENUNI,R,IOUT,INDIS)      
+        NODES = NCOL*NROW*NLAY
+C
+        WRITE(IOUT,15) NLAY,NROW,NCOL
+   15   FORMAT(1X,I4,' LAYERS',I10,' ROWS',I10,' COLUMNS')
+      ELSE
+C4B------FOR UNSTRUCTURED GRID READ NUMBER OF NODES, LAYERS AND CONNECTIVITY SIZES
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,NODES,R,IOUT,INDIS)
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,NLAY,R,IOUT,INDIS)
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,NJAG,R,IOUT,INDIS)
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IVSD,R,IOUT,INDIS)
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,NPER,R,IOUT,INDIS)
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ITMUNI,R,IOUT,INDIS)
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,LENUNI,R,IOUT,INDIS)
+        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IDSYMRD,R,IOUT,INDIS)
+C
+        NJA = NJAG
+        WRITE(IOUT,16) NODES,NLAY,NJAG,IVSD
+   16   FORMAT(1X,I10,' NODES',I10,' NLAY',I10,' NJAG',
+     *  2X,'VERT. SUBDISCRETIZATION INDEX, IVSD = ',I2)
+        WRITE(IOUT,17)IDSYMRD
+17      FORMAT(1X,'INDEX FOR INPUT OF UNSTRUCTURED, FINITE-VOLUME',1X,
+     1   'CONNECTIVITY INFORMATION, IDSYMRD = ',I3)
+      ENDIF
+C
+      WRITE(IOUT,20) NPER
+   20 FORMAT(1X,I4,' STRESS PERIOD(S) IN SIMULATION')
+C
+C5------SELECT AND PRINT A MESSAGE SHOWING TIME UNIT.
+      IF(ITMUNI.LT.0 .OR. ITMUNI.GT.5) ITMUNI=0
+      IF(ITMUNI.EQ.0) THEN
+         WRITE(IOUT,30)
+   30    FORMAT(1X,'MODEL TIME UNIT IS UNDEFINED')
+      ELSE IF(ITMUNI.EQ.1) THEN
+         WRITE(IOUT,40)
+   40    FORMAT(1X,'MODEL TIME UNIT IS SECONDS')
+      ELSE IF(ITMUNI.EQ.2) THEN
+         WRITE(IOUT,50)
+   50    FORMAT(1X,'MODEL TIME UNIT IS MINUTES')
+      ELSE IF(ITMUNI.EQ.3) THEN
+         WRITE(IOUT,60)
+   60    FORMAT(1X,'MODEL TIME UNIT IS HOURS')
+      ELSE IF(ITMUNI.EQ.4) THEN
+         WRITE(IOUT,70)
+   70    FORMAT(1X,'MODEL TIME UNIT IS DAYS')
+      ELSE
+         WRITE(IOUT,80)
+   80    FORMAT(1X,'MODEL TIME UNIT IS YEARS')
+      END IF
+C
+C6------SELECT AND PRINT A MESSAGE SHOWING LENGTH UNIT.
+      IF(LENUNI.LT.0 .OR. LENUNI.GT.3) LENUNI=0
+      IF(LENUNI.EQ.0) THEN
+         WRITE(IOUT,90)
+   90    FORMAT(1X,'MODEL LENGTH UNIT IS UNDEFINED')
+      ELSE IF(LENUNI.EQ.1) THEN
+         WRITE(IOUT,91)
+   91    FORMAT(1X,'MODEL LENGTH UNIT IS FEET')
+      ELSE IF(LENUNI.EQ.2) THEN
+         WRITE(IOUT,93)
+   93    FORMAT(1X,'MODEL LENGTH UNIT IS METERS')
+      ELSE IF(LENUNI.EQ.3) THEN
+         WRITE(IOUT,95)
+   95    FORMAT(1X,'MODEL LENGTH UNIT IS CENTIMETERS')
+      END IF
+C
+C7----ALLOCATE SPACE FOR TEMPORAL INFORMATION AND CONFINING LAYERS
+      ALLOCATE(LAYCBD(NLAY))
+      ALLOCATE(BOT(NODES))
+      ALLOCATE(TOP(NODES))
+      ALLOCATE (PERLEN(NPER),NSTP(NPER),TSMULT(NPER),ISSFLG(NPER))
+      ALLOCATE (ICONCV,NOCVCO,NOVFC)
+C
+C8----SET FLAGS AND CONFINING INFORMATION     
+      ICONCV=1
+      NOCVCO=1
+      NOVFC=0
+C
+C9-------Read confining bed information
+      READ(INDIS,*) (LAYCBD(K),K=1,NLAY)
+      LAYCBD(NLAY)=0
+      WRITE(IOUT,*) ' Confining bed flag for each layer:'
+      WRITE(IOUT,'(20I4)') (LAYCBD(K),K=1,NLAY)
+C
+C10------Count confining beds and setup LAYCBD to be the confining
+C10------bed number for each layer.
+      NCNFBD=0
+      DO 100 K=1,NLAY
+      IF(LAYCBD(K).NE.0) THEN
+         NCNFBD=NCNFBD+1
+         LAYCBD(K)=NCNFBD
+      END IF
+  100 CONTINUE
+      NBOTM=NLAY+NCNFBD      
+C
+C11------RETURN.
+      RETURN
+      END      
+
+      SUBROUTINE GWF3BAS9AR(IN,VERSION,MFVNAM)
+C     ******************************************************************************
+C     ALLOCATE AND READ BASIC PACKAGE INFORMATION
+C     ******************************************************************************
+C
+C        SPECIFICATIONS:
+C     ------------------------------------------------------------------
+      USE GLOBAL, ONLY:NCOL,NROW,NLAY,NPER,ITMUNI,NJA,NJAS,NJAG,
+     1          IVSD,LENUNI,IXSEC,ITRSS,INBAS,IFREFM,NODES,IOUT,
+     2          IUNIT,NIUNIT,HNEW,LAYHDT,LAYHDS,NODLAY,NBOTM,
+     3          PERLEN,NSTP,TSMULT,ISSFLG,IUNSTR,MXNODLAY,NCNFBD,
+     4          HOLD,IBOUND,RHS,AMAT,BUFF,STRT,IPRCONN,IDSYMRD,ILAYCON4,
+     5          IDEALLOC_LPF,IDEALLOC_HY,INCLN,INGNC,INGNC2,INGNCn,
+     6          ITRNSP,Sn,So,NEQS,ISYMFLG,WADIEPS,IWADI,IWADICLN,iunsat
+      USE PARAMMODULE,ONLY:MXPAR,MXCLST,MXINST,ICLSUM,IPSUM,
+     1                     INAMLOC,NMLTAR,NZONAR,NPVAL,
+     2                     B,IACTIVE,IPLOC,IPCLST,PARNAM,PARTYP,
+     3                     ZONNAM,MLTNAM,INAME
+      USE GWFBASMODULE,ONLY:MSUM,IHEDFM,IHEDUN,IDDNFM,IDDNUN,IBOUUN,
+     1                 LBHDSV,LBDDSV,LBBOSV,IBUDFL,ICBCFL,IHDDFL,ISPCFL,
+     2                 IAUXSV,IBDOPT,IPRTIM,IPEROC,ITSOC,ICHFLG,IFRCNVG,
+     3                 DELT,PERTIM,TOTIM,HNOFLO,CHEDFM,CDDNFM,
+     4                 CBOUFM,VBVL,VBNM,ISPCFM,ISPCUN,CSPCFM
+C
+      CHARACTER*4 CUNIT(NIUNIT)
+      CHARACTER*(*) VERSION
+      CHARACTER*80 HEADNG(2)
+      CHARACTER*(*) MFVNAM
+      CHARACTER*200 LINE
+C
+      INTEGER, DIMENSION(:,:,:),    ALLOCATABLE  ::ITMP
+      REAL, DIMENSION(:,:,:),ALLOCATABLE  ::HTMP
+      REAL, DIMENSION(:),ALLOCATABLE  ::HTMP1
+      CHARACTER*24 ANAME(2)
+      DATA ANAME(1) /'          BOUNDARY ARRAY'/
+      DATA ANAME(2) /'            INITIAL HEAD'/
+C     ------------------------------------------------------------------
+C1------Allocate scalar variables.
+C
+      ALLOCATE(ICLSUM,IPSUM,INAMLOC,NMLTAR,NZONAR,NPVAL)
+      ALLOCATE (B(MXPAR))
+      ALLOCATE (IACTIVE(MXPAR))
+      ALLOCATE (IPLOC(4,MXPAR))
+      ALLOCATE (IPCLST(14,MXCLST))
+      ALLOCATE (PARNAM(MXPAR))
+      ALLOCATE (PARTYP(MXPAR))
+      ALLOCATE (INAME(MXINST))
+C
+      ALLOCATE(MSUM,IHEDFM,IHEDUN,IDDNFM,IDDNUN,IBOUUN,LBHDSV,LBDDSV,
+     1         LBBOSV,ISPCFM,ISPCUN)
+      ALLOCATE(IBUDFL,ICBCFL,IHDDFL,ISPCFL,IAUXSV,IBDOPT,IPRTIM,IPEROC,
+     1         ITSOC,ICHFLG,IFRCNVG)
+      ALLOCATE(DELT,PERTIM,TOTIM,HNOFLO)
+      ALLOCATE(CHEDFM,CDDNFM,CBOUFM,CSPCFM)
+C
+C2------Open all files in name file.
+!!langevin mf2015      CALL SGWF2BAS8OPEN(INUNIT,IOUT,IUNIT,CUNIT,NIUNIT,
+!!langevin mf2015      &                 VERSION,INBAS,MAXUNIT,MFVNAM)
+C
+C3------PRINT A MESSAGE IDENTIFYING THE BASIC PACKAGE.
+      INBAS=IN
+      WRITE(IOUT,1)MFVNAM,VERSION,INBAS
+    1 FORMAT(1X,/1X,'BAS -- BASIC PACKAGE',A,A,
+     2' INPUT READ FROM UNIT ',I4)
+C
+C4------Initialize parameter definition variables.
+      ITRNSP=0
+      IPSUM=0
+      ICLSUM=0
+      INAMLOC=1
+      DO 10 N=1,MXPAR
+        PARNAM(N)=' '
+        PARTYP(N)=' '
+        IPLOC(1,N)=0
+        IPLOC(2,N)=0
+        IACTIVE(N)=0
+   10 CONTINUE
+C
+C5------Read first lines of BAS Package file and identify grid type and options.
+C5A-----READ AND PRINT COMMENTS.  SAVE THE FIRST TWO COMMENTS IN HEADNG.
+      HEADNG(1)=' '
+      HEADNG(2)=' '
+      WRITE(IOUT,*)
+      READ(INBAS,'(A)') LINE
+      IF(LINE(1:1).NE.'#') GO TO 20
+      HEADNG(1)=LINE(1:80)
+      WRITE(IOUT,'(1X,A)') HEADNG(1)
+      READ(INBAS,'(A)') LINE
+      IF(LINE(1:1).NE.'#') GO TO 20
+      HEADNG(2)=LINE(1:80)
+      WRITE(IOUT,'(1X,A)') HEADNG(2)
+      CALL URDCOM(INBAS,IOUT,LINE)
+C
+C5B-----LOOK FOR OPTIONS IN THE FIRST ITEM AFTER THE HEADING.
+   20 IXSEC=0
+      ICHFLG=0
+      IFREFM=0
+      IPRTIM=0
+!!langevin mf2015      IUNSTR=0
+      IFRCNVG=0
+      LLOC=1
+      IPRCONN=0
+   25 CALL URWORD(LINE,LLOC,ISTART,ISTOP,1,N,R,IOUT,INBAS)
+      IF(LINE(ISTART:ISTOP).EQ.'XSECTION') THEN
+         IXSEC=1
+      ELSE IF(LINE(ISTART:ISTOP).EQ.'CHTOCH') THEN
+         ICHFLG=1
+      ELSE IF(LINE(ISTART:ISTOP).EQ.'FREE') THEN
+         IFREFM=1
+         WRITE(IOUT,26)
+   26    FORMAT (1X,'THE FREE FORMAT OPTION HAS BEEN SELECTED')
+      ELSEIF(LINE(ISTART:ISTOP).EQ.'PRINTTIME') THEN
+         IPRTIM=1
+         WRITE(IOUT,7)
+    7    FORMAT(1X,'THE PRINTTIME OPTION HAS BEEN SELECTED')
+      ELSEIF(LINE(ISTART:ISTOP).EQ.'UNSTRUCTURED') THEN
+         IUNSTR=1
+      ELSEIF(LINE(ISTART:ISTOP).EQ.'PRINTFV') THEN
+         IPRCONN=1
+      ELSEIF(LINE(ISTART:ISTOP).EQ.'CONVERGE') THEN
+         IFRCNVG=1
+      END IF
+      IF(LLOC.LT.200) GO TO 25
+C5C-------SET UNSTRUCTURED FLAG IF DISU IS USED       
+!!langevin mf2015      INDIS=IUDIS 
+!!langevin mf2015      IF(IUNIT(IUDIS+1).GT.0) THEN 
+!!langevin mf2015        IUNSTR=1 
+!!langevin mf2015        INDIS=IUDIS+1 
+!!langevin mf2015      ENDIF 
+C
+C5D-----PRINT A MESSAGE SHOWING OPTIONS.
+      IF(IXSEC.NE.0) WRITE(IOUT,61)
+   61 FORMAT(1X,'CROSS SECTION OPTION IS SPECIFIED')
+      IF(ICHFLG.NE.0) WRITE(IOUT,62)
+   62 FORMAT(1X,'CALCULATE FLOW BETWEEN ADJACENT CONSTANT-HEAD CELLS')
+      IF(IUNSTR.NE.0) WRITE(IOUT,63)
+   63 FORMAT(1X,'THE UNSTRUCTURED GRID OPTION HAS BEEN SELECTED')
+
+C----------------------------------------------------------------------------------------
+C6------ALLOCATE AND READ DISCRETIZATION DATA FOR ALL PROCESS DOMAINS,
+C6------SET GLOBAL PARAMETERS, CONNECTIVITIES AND GEOMETRIC ARRAYS.
+C----------------------------------------------------------------------------------------
+!!langevin mf2015      CALL SGLO2BAS8ARDIS(INDIS,IOUT,IUCLN,IUGNC,IUGNC2,IUGNCn)
+C----------------------------------------------------------------------------------------
+C7-----Allocate space for remaining global arrays.
+      ALLOCATE (HNEW(NEQS))
+      ALLOCATE (HOLD(NEQS))
+      ALLOCATE (Sn(NEQS),So(NEQS))
+      Sn = 1.0
+      So = 1.0
+      ALLOCATE (RHS(NEQS))
+      ALLOCATE (BUFF(NEQS))
+      ALLOCATE (STRT(NEQS))
+      ALLOCATE (LAYHDT(NLAY))
+      ALLOCATE (LAYHDS(NLAY))
+      WRITE(IOUT,'(//)')
+C
+C8----Initialize head-dependent thickness indicator to code that
+C8----indicates layer is undefined.
+      DO 100 I=1,NLAY
+        LAYHDT(I)=-1
+        LAYHDS(I)=-1
+  100 CONTINUE
+C9------INITIALIZE TOTAL ELAPSED TIME
+      TOTIM=0.
+C
+C------------------------------------------------------------------------
+C10------Read rest of groundwater BAS Package file (IBOUND and initial heads)
+      IF(IUNSTR.EQ.0)THEN
+C10A-------FOR STRUCTURED GRIDS
+        CALL SGWF2BAS8SR
+      ELSE
+C10B-------FOR UNSTRUCTURED GRIDS
+        CALL SGWF2BAS8UR
+      ENDIF
+C
+C-----------------------------------------------------------------------
+C11-----SET UP OUTPUT CONTROL.
+!!langevin mf2015 todo: add oc to gwf3ar
+!!langevin mf2015      CALL SGWF2BAS7I(NLAY,IUNIT(IUOC),IOUT,IFREFM,NIUNIT,IUNIT(15))
+C
+C12-----INITIALIZE VOLUMETRIC BUDGET ACCUMULATORS TO ZERO.
+!!langevin mf2015 todo: vbvl is allocated in sgwf2bas7i, so need to do as part of oc
+!!langevin mf2015  590 ZERO=0.
+!!langevin mf2015      DO 600 I=1,NIUNIT
+!!langevin mf2015      DO 600 J=1,4
+!!langevin mf2015      VBVL(J,I)=ZERO
+!!langevin mf2015  600 CONTINUE
+C
+C13-----Allocate and read Zone and Multiplier arrays
+!!langevin mf2015 todo: add support for zone and multiplier arrays
+!!langevin mf2015      CALL SGWF2BAS7U1ARMZ(IUNIT(IUZON),IUNIT(IUMLT))
+C
+C14-----READ PARAMETER VALUES FILE.
+!!langevin mf2015 todo: add support for parameter values file      
+!!langevin mf2015      CALL SGWF2BAS7U1ARPVAL(IUPVAL)
+C15-----return
+      RETURN
+      END
+
+      
       SUBROUTINE GLO2BAS8AR(INUNIT,CUNIT,VERSION,IUDIS,IUZON,IUMLT,
      2   MAXUNIT,IUOC,HEADNG,IUPVAL,MFVNAM,IUCLN,IUGNC,IUGNC2,IUGNCn)
 C     ******************************************************************************

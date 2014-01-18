@@ -181,7 +181,7 @@ subroutine simulation_init(simfile)
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
       fname=line(ityp1:ityp2)
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,id,R,IOUT,INUNIT)
-      call gwfmodel_create(fname,id)
+      call gwfmodel_create(fname,id,iout)
     !
     elseif(filtyp=='TDIS') then
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
