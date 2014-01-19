@@ -13,6 +13,8 @@ module gwfmodule
     contains
     procedure :: modelst=>gwf3st
     procedure :: modelrp=>gwf3rp
+    procedure :: fmcalc=>gwf3fmcalc
+    procedure :: fill=>gwf3fill
   end type gwfmodeltype
   CHARACTER*40 VERSION
   CHARACTER*10 MFVNAM
@@ -108,10 +110,17 @@ module gwfmodule
     implicit none
     class(gwfmodeltype) :: this
     class(packagetype), pointer :: p
-    integer :: ip
+    integer :: ip,i
     !
     !stress timing
     print *,'gwf3st'
+    !
+    ! -- copy the starting heads into this%x
+    if(kper==1) then
+      do i=1,this%neq
+        this%x(i)=this%gwfglodat%hnew(i)
+      enddo
+    endif
     CALL GWF2BAS8ST(kper)
     do ip=1,this%packages%npackages
       call this%packages%getpackage(p,ip)
@@ -134,6 +143,62 @@ module gwfmodule
           call p%packagerp()
       enddo
   end subroutine gwf3rp
+
+  subroutine gwf3fmcalc(this)
+    use tdismodule,only:kstp,kper
+    implicit none
+    class(gwfmodeltype) :: this
+    class(packagetype), pointer :: p
+    integer :: ip,ipos,kkiter
+    !
+    print *,'gwfmodel fmcalc'
+    ! -- fm routines
+    kkiter=1
+    CALL GWF2BAS7U1FM
+    IF(IUNIT(1).GT.0) CALL GWF2BCFU1FM(KKITER,kstp,kper)
+    IF(IUNIT(2).GT.0) CALL GWF2WEL7U1FM
+    IF(IUNIT(7).GT.0) CALL GWF2GHB7U1FM
+    !
+    !calculate the rhs and hcof terms for each package
+    do ip=1,this%packages%npackages
+        call this%packages%getpackage(p,ip)
+        call p%fmcalc()
+    enddo
+  end subroutine gwf3fmcalc
+
+  subroutine gwf3fill(this,amatsln,njasln)
+    !fill amatsln and rhssln with amat and rhs from this gwfmodel
+    implicit none
+    class(gwfmodeltype) :: this
+    double precision,dimension(njasln),intent(inout) :: amatsln
+    integer,intent(in) :: njasln
+    class(packagetype), pointer :: p
+    integer :: ip,n,i,ipos
+    print *,'gwfmodel fmfill'
+    !
+    !copy the model conductance into the solution amat
+    do ipos=1,this%nja
+        !!langevin mf2015 todo: memory management of amatsln,amat,and cond
+        this%cond(ipos)=this%gwfglodat%amat(ipos)
+        amatsln(this%idxglo(ipos))=this%cond(ipos)
+    enddo
+    !
+    ! -- copy rhs
+    do ipos=1,this%neq
+      this%rhs(ipos)=this%rhs(ipos)+this%gwfglodat%rhs(ipos)
+    enddo
+    !
+    !copy the package rhs and hcof into the rhs and amat
+    do ip=1,this%packages%npackages
+        call this%packages%getpackage(p,ip)
+        do i=1,p%nbound
+            n=p%nodelist(i)
+            this%rhs(n)=this%rhs(n)+p%rhs(i)
+            ipos=this%ia(n)
+            amatsln(this%idxglo(ipos))=amatsln(this%idxglo(ipos))+p%hcof(i)
+        enddo
+    enddo
+end subroutine gwf3fill
   
   subroutine package_create(fname,filtyp,ipakid,packages)
     use PackageModule
