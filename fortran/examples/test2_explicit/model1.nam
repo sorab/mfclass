@@ -8,4 +8,4 @@ GHB          21 model1.ghb
 OC           14 model.oc
 DATA(BINARY) 50 model1.out.cbc
 DATA(BINARY) 51 model1.out.hds
-SMS          27 model.pcgu.sms
+#SMS          27 model.pcgu.sms
