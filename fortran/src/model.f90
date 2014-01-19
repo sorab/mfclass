@@ -43,7 +43,7 @@ type modeltype
     contains
     procedure :: disread
     procedure :: modelst=>modelclassst
-    procedure :: modelrp
+    procedure :: modelrp=>modelclassrp
     procedure :: fmcalc
     procedure :: fill
     procedure :: printname
@@ -60,7 +60,7 @@ end subroutine model_list_init
 subroutine setmodel(this, newmodel, ipos)
     implicit none
     class(modellisttype) :: this
-    class(modeltype), target, intent(in) :: newmodel;
+    class(modeltype), target, intent(in) :: newmodel
     integer, intent(in) :: ipos
     this%models(ipos)%obj => newmodel
     this%nmodels=max(ipos,this%nmodels)
@@ -231,24 +231,26 @@ subroutine modelclassst(this)
     integer :: ip
     !
     !stress timing
+    print *,'modelclassst'
     do ip=1,this%packages%npackages
         call this%packages%getpackage(p,ip)
         call p%packagest()
     enddo
 end subroutine modelclassst
 
-subroutine modelrp(this)
+subroutine modelclassrp(this)
     implicit none
     class(modeltype) :: this
     class(packagetype), pointer :: p
     integer :: ip
     !
     !read and prepare
+    print *,'modelclassrp'
     do ip=1,this%packages%npackages
         call this%packages%getpackage(p,ip)
         call p%packagerp()
     enddo
-end subroutine modelrp
+end subroutine modelclassrp
 
 subroutine fmcalc(this)
     implicit none

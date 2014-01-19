@@ -209,7 +209,7 @@ end subroutine initialize
 subroutine addmodel(this, model, ipos)
     implicit none
     class(solutiontype) :: this
-    type(modeltype),intent(in) :: model
+    class(modeltype),intent(in) :: model
     integer,intent(in) :: ipos
     call this%modellist%setmodel(model,ipos)
 end subroutine addmodel

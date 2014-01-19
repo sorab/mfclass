@@ -140,7 +140,7 @@ subroutine simulation_init(simfile)
   use TdisModule
   use SolutionModule
   use ModelModule
-  use GWFModule
+  use GWFModule,only:gwf3ar
   use CrossModule
   implicit none
   character(len=*),intent(in) :: simfile

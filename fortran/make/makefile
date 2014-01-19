@@ -33,32 +33,36 @@ USRLIB  =
 
 
 OBJECTS = \
-        loose_modules.o \
-        utl7u1.o \
-        parutl7.o \
-        xmdlib_2.o \
-        sms_modules.o \
-        xmd_modules.o \
-        package.o \
-        pcgu_modules.o \
-        tdis.o \
-        sparse.o \
-        gwf3_glomodule.o \
-        gwf3_basmodule.o \
-        gwf3_bcfmodule.o \
-        cln_glomodule.o \
-        package_wel.o \
-        package_ghb.o \
-        model.o \
-        gwf3.o \
-        cross.o \
-        soln.o \
-        mf2015.o \
-        sms7.o \
-        xmd.o \
-        pcgu7.o \
-        gwf3_glo.o \
-        gwf3_bas.o \
+loose_modules.o \
+package.o \
+trn1.o \
+gwf3_bcfmodule.o \
+pcgu_modules.o \
+cln_glomodule.o \
+tdis.o \
+xmdlib_2.o \
+sparse.o \
+gwf3_basmodule.o \
+parutl7.o \
+xmd_modules.o \
+gwf3_glomodule.o \
+sms_modules.o \
+package_wel.o \
+package_ghb.o \
+gwf3_ghb.o \
+gwf3_wel.o \
+model.o \
+gwf3.o \
+cross.o \
+soln.o \
+mf2015.o \
+gwf3_bcf.o \
+pcgu7.o \
+gwf3_bas.o \
+xmd.o \
+utl7u1.o \
+gwf3_glo.o \
+sms7.o \
         
 
 

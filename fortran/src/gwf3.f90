@@ -111,6 +111,7 @@ module gwfmodule
     integer :: ip
     !
     !stress timing
+    print *,'gwf3st'
     CALL GWF2BAS8ST(kper)
     do ip=1,this%packages%npackages
       call this%packages%getpackage(p,ip)
@@ -125,6 +126,7 @@ module gwfmodule
       integer :: ip
       !
       !read and prepare
+      print *,'gwf3rp'
       IF(IUNIT(2).GT.0) CALL GWF2WEL7U1RP(IUNIT(2))
       IF(IUNIT(7).GT.0) CALL GWF2GHB7U1RP(IUNIT(7))
       do ip=1,this%packages%npackages
