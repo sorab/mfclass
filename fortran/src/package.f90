@@ -27,7 +27,9 @@ type packagetype
 contains
     procedure :: packagest
     procedure :: packagerp
+    procedure :: packagead
     procedure :: fmcalc => packagefmcalc
+    procedure :: packagebd
     procedure :: pack_allocate
 end type packagetype
 
@@ -72,11 +74,23 @@ subroutine packagerp(this)
     print *, 'packagerp.  if you see this, this package has no RP routine'
 end subroutine packagerp
 
+subroutine packagead(this)
+    implicit none
+    class(packagetype) :: this
+    print *, 'packagead.  if you see this, this package has no AD routine'
+end subroutine packagead
+
 subroutine packagefmcalc(this)
     implicit none
     class(packagetype) :: this
     print *, 'you should never see this.  this should be overridden.'
 end subroutine packagefmcalc
+
+subroutine packagebd(this)
+    implicit none
+    class(packagetype) :: this
+    print *, 'you should never see this.  this should be overridden.'
+end subroutine packagebd
 
 end module PackageModule
 

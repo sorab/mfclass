@@ -106,12 +106,30 @@ program mf2015fort
       ! -- print kstp info
       print *,'kstp: ', kstp
       !
+      ! -- Advance the time step
+      do is=1,solutionlist%nsolutions
+        call solutionlist%getsolution(s,is)
+        do im=1,s%modellist%nmodels
+          call s%modellist%getmodel(m,im)
+          call m%modelad()
+        enddo
+      enddo
+      !
       ! -- Solve each solution
       do is=1,solutionlist%nsolutions
         call solutionlist%getsolution(s,is)
         call s%solve()
       enddo
     !
+      ! -- Budget
+      do is=1,solutionlist%nsolutions
+        call solutionlist%getsolution(s,is)
+        do im=1,s%modellist%nmodels
+          call s%modellist%getmodel(m,im)
+          call m%modelbd()
+        enddo
+      enddo
+
     enddo
   enddo
   !

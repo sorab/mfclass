@@ -44,8 +44,10 @@ type modeltype
     procedure :: disread
     procedure :: modelst=>modelclassst
     procedure :: modelrp=>modelclassrp
+    procedure :: modelad=>modelclassad
     procedure :: fmcalc
     procedure :: fill
+    procedure :: modelbd
     procedure :: printname
 end type modeltype
 
@@ -252,6 +254,20 @@ subroutine modelclassrp(this)
     enddo
 end subroutine modelclassrp
 
+subroutine modelclassad(this)
+    implicit none
+    class(modeltype) :: this
+    class(packagetype), pointer :: p
+    integer :: ip
+    !
+    !advance
+    print *,'modelclassad'
+    do ip=1,this%packages%npackages
+        call this%packages%getpackage(p,ip)
+        call p%packagead()
+    enddo
+end subroutine modelclassad
+
 subroutine fmcalc(this)
     implicit none
     class(modeltype) :: this
@@ -293,6 +309,20 @@ subroutine fill(this,amatsln,njasln)
         enddo
     enddo
 end subroutine fill
+
+subroutine modelbd(this)
+    implicit none
+    class(modeltype) :: this
+    class(packagetype), pointer :: p
+    integer :: ip
+    !
+    !advance
+    print *,'modelbd'
+    do ip=1,this%packages%npackages
+        call this%packages%getpackage(p,ip)
+        call p%packagebd()
+    enddo
+end subroutine modelbd
 
 subroutine printname(this)
   implicit none

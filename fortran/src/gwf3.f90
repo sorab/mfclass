@@ -4,17 +4,23 @@ module gwfmodule
   use global,only:gwfglotype,niunit
   use GWFBASMODULE,only:gwfbastype
   use GWFBCFMODULE,only:gwfbcftype
+  use GWFGHBMODULE,only:gwfghbtype
+  use GWFWELMODULE,only:gwfweltype
   private
   public :: gwf3ar
   type, extends(modeltype) :: gwfmodeltype
     type(gwfglotype) :: gwfglodat
     type(gwfbastype) :: gwfbasdat
     type(gwfbcftype) :: gwfbcfdat
+    type(gwfghbtype) :: gwfghbdat
+    type(gwfweltype) :: gwfweldat
     contains
     procedure :: modelst=>gwf3st
     procedure :: modelrp=>gwf3rp
     procedure :: fmcalc=>gwf3fmcalc
     procedure :: fill=>gwf3fill
+    procedure :: modelbd=>gwf3bd
+    procedure :: pntset=>gwf3pntset
   end type gwfmodeltype
   CHARACTER*40 VERSION
   CHARACTER*10 MFVNAM
@@ -79,13 +85,13 @@ module gwfmodule
     ! -- wel
     IF(IUNIT(2).GT.0) THEN
       CALL GWF2WEL7U1AR(IUNIT(2))
-      !todo: CALL POINTER SAVE HERE
+      call gwfmodel%gwfweldat%pntsav
     ENDIF
     !
     ! -- ghb
     IF(IUNIT(7).GT.0) THEN
       CALL GWF2GHB7U1AR(IUNIT(7))
-      !todo: CALL POINTER SAVE HERE
+      call gwfmodel%gwfghbdat%pntsav
     ENDIF
     !
     ! -- set and allocate gwfmodel variables and arrays
@@ -114,6 +120,7 @@ module gwfmodule
     !
     !stress timing
     print *,'gwf3st'
+    call this%pntset
     !
     ! -- copy the starting heads into this%x
     if(kper==1) then
@@ -136,6 +143,8 @@ module gwfmodule
       !
       !read and prepare
       print *,'gwf3rp'
+      call this%pntset
+
       IF(IUNIT(2).GT.0) CALL GWF2WEL7U1RP(IUNIT(2))
       IF(IUNIT(7).GT.0) CALL GWF2GHB7U1RP(IUNIT(7))
       do ip=1,this%packages%npackages
@@ -144,6 +153,25 @@ module gwfmodule
       enddo
   end subroutine gwf3rp
 
+  subroutine gwf3ad(this)
+      use tdismodule,only:kstp,kper
+      implicit none
+      class(gwfmodeltype) :: this
+      class(packagetype), pointer :: p
+      integer :: ip
+      !
+      !advance
+      print *,'gwf3ad'
+      call this%pntset
+
+      CALL GWF2BAS7AD(kper,kstp)
+      IF(IUNIT(1).GT.0) CALL GWF2BCFU1AD(kper)
+      do ip=1,this%packages%npackages
+          call this%packages%getpackage(p,ip)
+          call p%packagead()
+      enddo
+  end subroutine gwf3ad
+  
   subroutine gwf3fmcalc(this)
     use tdismodule,only:kstp,kper
     implicit none
@@ -152,6 +180,8 @@ module gwfmodule
     integer :: ip,ipos,kkiter
     !
     print *,'gwfmodel fmcalc'
+    call this%pntset
+    
     ! -- fm routines
     kkiter=1
     CALL GWF2BAS7U1FM
@@ -175,6 +205,7 @@ module gwfmodule
     class(packagetype), pointer :: p
     integer :: ip,n,i,ipos
     print *,'gwfmodel fmfill'
+    call this%pntset
     !
     !copy the model conductance into the solution amat
     do ipos=1,this%nja
@@ -198,7 +229,47 @@ module gwfmodule
             amatsln(this%idxglo(ipos))=amatsln(this%idxglo(ipos))+p%hcof(i)
         enddo
     enddo
-end subroutine gwf3fill
+  end subroutine gwf3fill
+
+  subroutine gwf3bd(this)
+      use tdismodule,only:kstp,kper
+      implicit none
+      class(gwfmodeltype) :: this
+      class(packagetype), pointer :: p
+      integer :: ip,icnvg
+      icnvg=1 !!langevin mf2015 todo: get icnvg in here
+      !
+      !advance
+      print *,'gwf3bd'
+      ALLOCATE(this%gwfglodat%FLOWJA(this%gwfglodat%NJA))
+      call this%pntset
+      
+      ! -- push the solution results into hnew
+      !langevin mf2015 todo: memory management of x and hnew
+      this%gwfglodat%hnew(:)=this%x(:)
+
+      CALL GWF2BAS7OC(kstp,kper,ICNVG,IUNIT(12))
+      this%gwfbasdat%MSUM = 1 
+      IF (IUNIT(1).GT.0) CALL GWF2BCFU1BDS(kstp,kper)
+      IF (IUNIT(1).GT.0) THEN
+        CALL GWF2BCFU1BDADJ(kstp,kper)
+      ENDIF
+      IF (IUNIT(1).GT.0) THEN
+        CALL GWF2BCFU1BDCHWR(kstp,kper)  
+        CALL GWF2BCFU1BDADJWR(kstp,kper)
+      ENDIF
+      DEALLOCATE(this%gwfglodat%FLOWJA)
+      IF(IUNIT(2).GT.0) CALL GWF2WEL7U1BD(kstp,kper)
+      IF(IUNIT(7).GT.0) CALL GWF2GHB7U1BD(kstp,kper)
+
+      do ip=1,this%packages%npackages
+          call this%packages%getpackage(p,ip)
+          call p%packagebd()
+      enddo
+      
+      CALL GWF2BAS7OT(kstp,kper,ICNVG,1)
+  end subroutine gwf3bd
+  
   
   subroutine package_create(fname,filtyp,ipakid,packages)
     use PackageModule
@@ -218,4 +289,15 @@ end subroutine gwf3fill
     call packages%setpackage(packobj,ipakid)
   end subroutine package_create
 
+  subroutine gwf3pntset(this)
+    ! -- set pointer to this model
+    implicit none
+    class(gwfmodeltype) :: this
+    call this%gwfglodat%pntset
+    call this%gwfbasdat%pntset
+    if(iunit(1).gt.0) call this%gwfbcfdat%pntset
+    if(iunit(2).gt.0) call this%gwfweldat%pntset
+    if(iunit(7).gt.0) call this%gwfghbdat%pntset
+  end subroutine gwf3pntset
+  
 end module gwfmodule
