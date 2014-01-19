@@ -10,6 +10,9 @@ module gwfmodule
     type(gwfglotype) :: gwfglodat
     type(gwfbastype) :: gwfbasdat
     type(gwfbcftype) :: gwfbcfdat
+    contains
+    procedure :: modelst=>gwf3st
+    procedure :: modelrp=>gwf3rp
   end type gwfmodeltype
   CHARACTER*40 VERSION
   CHARACTER*10 MFVNAM
@@ -38,6 +41,7 @@ module gwfmodule
 ! 
 !    SPECIFICATIONS:
 ! ------------------------------------------------------------------------------
+    use global,only: ia,ja
     implicit none
     character(len=*),intent(in) :: filename
     integer,intent(in) :: id,ioutsim
@@ -70,6 +74,18 @@ module gwfmodule
         call gwfmodel%gwfbcfdat%pntsav
     ENDIF
     !
+    ! -- wel
+    IF(IUNIT(2).GT.0) THEN
+      CALL GWF2WEL7U1AR(IUNIT(2))
+      !todo: CALL POINTER SAVE HERE
+    ENDIF
+    !
+    ! -- ghb
+    IF(IUNIT(7).GT.0) THEN
+      CALL GWF2GHB7U1AR(IUNIT(7))
+      !todo: CALL POINTER SAVE HERE
+    ENDIF
+    !
     ! -- set and allocate gwfmodel variables and arrays
     gwfmodel%neq=gwfmodel%gwfglodat%neqs
     gwfmodel%nja=gwfmodel%gwfglodat%nja    
@@ -79,9 +95,44 @@ module gwfmodule
     allocate(gwfmodel%rhs(gwfmodel%neq))
     allocate(gwfmodel%idxglo(gwfmodel%nja))
     !
+    !copy ia and ja: todo: improve memory management. there is a copy
+    !of ia and ja in the model and in global
+    gwfmodel%ia(:) = ia
+    gwfmodel%ja(:) = ja
+    !
     return
   end subroutine gwf3ar
 
+  subroutine gwf3st(this)
+    use tdismodule,only:kper
+    implicit none
+    class(gwfmodeltype) :: this
+    class(packagetype), pointer :: p
+    integer :: ip
+    !
+    !stress timing
+    CALL GWF2BAS8ST(kper)
+    do ip=1,this%packages%npackages
+      call this%packages%getpackage(p,ip)
+      call p%packagest()
+    enddo
+  end subroutine gwf3st
+
+  subroutine gwf3rp(this)
+      implicit none
+      class(gwfmodeltype) :: this
+      class(packagetype), pointer :: p
+      integer :: ip
+      !
+      !read and prepare
+      IF(IUNIT(2).GT.0) CALL GWF2WEL7U1RP(IUNIT(2))
+      IF(IUNIT(7).GT.0) CALL GWF2GHB7U1RP(IUNIT(7))
+      do ip=1,this%packages%npackages
+          call this%packages%getpackage(p,ip)
+          call p%packagerp()
+      enddo
+  end subroutine gwf3rp
+  
   subroutine package_create(fname,filtyp,ipakid,packages)
     use PackageModule
     use welmodule

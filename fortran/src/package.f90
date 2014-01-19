@@ -24,8 +24,9 @@ type packagetype
     integer,pointer,dimension(:) :: nodelist
     double precision, allocatable, dimension(:) :: hcof
     double precision, allocatable, dimension(:) :: rhs
-    contains
-    procedure :: read_next
+contains
+    procedure :: packagest
+    procedure :: packagerp
     procedure :: fmcalc => packagefmcalc
     procedure :: pack_allocate
 end type packagetype
@@ -59,11 +60,17 @@ subroutine pack_allocate(this,maxbound)
     allocate(this%rhs(maxbound))
 end subroutine pack_allocate
 
-subroutine read_next(this)
+subroutine packagest(this)
     implicit none
     class(packagetype) :: this
-    print *, 'you should never see this.  this should be overridden.'
-end subroutine read_next
+    print *, 'packagest.  if you see this, this package has no ST routine.'
+end subroutine packagest
+
+subroutine packagerp(this)
+    implicit none
+    class(packagetype) :: this
+    print *, 'packagerp.  if you see this, this package has no RP routine'
+end subroutine packagerp
 
 subroutine packagefmcalc(this)
     implicit none

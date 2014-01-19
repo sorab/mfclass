@@ -1,5 +1,5 @@
 module tdismodule
-  integer :: nper
+  integer :: nper,kper,kstp
   integer :: itrss
   real,    save,    dimension(:),    allocatable  ::perlen
   integer, save,    dimension(:),    allocatable  ::nstp

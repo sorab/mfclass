@@ -16,6 +16,7 @@ program mf2015fort
   use SolutionModule
   use ModelModule
   use CrossModule
+  use TdisModule
   implicit none
   class(modeltype), pointer :: m
   class(solutiontype), pointer :: s
@@ -85,19 +86,33 @@ program mf2015fort
     call s%smsinit()
   enddo
   !
-  ! -- Read stress period data
-  do is=1,solutionlist%nsolutions
-    call solutionlist%getsolution(s,is)
-    do im=1,s%modellist%nmodels
-      call s%modellist%getmodel(m,im)
-      call m%read_prepare()
+  do kper=1,nper
+    !
+    ! -- print stress period info
+    print *,'kper: ', kper
+    !
+    ! -- Setup stress timing (ST) and read stress period data (RP)
+    do is=1,solutionlist%nsolutions
+      call solutionlist%getsolution(s,is)
+      do im=1,s%modellist%nmodels
+        call s%modellist%getmodel(m,im)
+        call m%modelst()
+        call m%modelrp()
+      enddo
     enddo
-  enddo
-  !
-  ! -- Solve each solution
-  do is=1,solutionlist%nsolutions
-    call solutionlist%getsolution(s,is)
-    call s%solve()
+    !
+    do kstp=1,nstp(kper)
+      !
+      ! -- print kstp info
+      print *,'kstp: ', kstp
+      !
+      ! -- Solve each solution
+      do is=1,solutionlist%nsolutions
+        call solutionlist%getsolution(s,is)
+        call s%solve()
+      enddo
+    !
+    enddo
   enddo
   !
   ! -- Save each solution

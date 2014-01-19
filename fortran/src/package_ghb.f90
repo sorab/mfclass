@@ -9,7 +9,7 @@ type, extends(packagetype) :: ghbtype
     contains
     procedure :: ghb_ar
     procedure :: ghb_allocate
-    procedure :: read_next
+    procedure :: packagerp
     procedure :: fmcalc => ghbfmcalc
 end type ghbtype
 
@@ -58,7 +58,7 @@ subroutine ghb_allocate(this,maxbound)
     allocate(this%stage(maxbound))
 end subroutine ghb_allocate
 
-subroutine read_next(this)
+subroutine packagerp(this)
     implicit none
     class(ghbtype) :: this
     integer :: i
@@ -67,7 +67,7 @@ subroutine read_next(this)
     do i=1,this%nbound
         read(this%inunit,*) this%nodelist(i),this%stage(i),this%cond(i)
     enddo
-end subroutine read_next
+end subroutine packagerp
 
 subroutine ghbfmcalc(this)
     implicit none

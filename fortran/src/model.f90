@@ -42,7 +42,8 @@ type modeltype
     integer, dimension(10) :: crosses
     contains
     procedure :: disread
-    procedure :: read_prepare
+    procedure :: modelst=>modelclassst
+    procedure :: modelrp
     procedure :: fmcalc
     procedure :: fill
     procedure :: printname
@@ -223,18 +224,31 @@ subroutine disread(this,filename,id)
 
 end subroutine disread
 
-subroutine read_prepare(this)
+subroutine modelclassst(this)
     implicit none
     class(modeltype) :: this
     class(packagetype), pointer :: p
     integer :: ip
     !
-    !calculate the rhs and hcof terms for each package
+    !stress timing
     do ip=1,this%packages%npackages
         call this%packages%getpackage(p,ip)
-        call p%read_next()
+        call p%packagest()
     enddo
-end subroutine read_prepare
+end subroutine modelclassst
+
+subroutine modelrp(this)
+    implicit none
+    class(modeltype) :: this
+    class(packagetype), pointer :: p
+    integer :: ip
+    !
+    !read and prepare
+    do ip=1,this%packages%npackages
+        call this%packages%getpackage(p,ip)
+        call p%packagerp()
+    enddo
+end subroutine modelrp
 
 subroutine fmcalc(this)
     implicit none
