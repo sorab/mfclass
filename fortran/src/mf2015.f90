@@ -88,9 +88,6 @@ program mf2015fort
   !
   do kper=1,nper
     !
-    ! -- print stress period info
-    print *,'kper: ', kper
-    !
     ! -- Setup stress timing (ST) and read stress period data (RP)
     do is=1,solutionlist%nsolutions
       call solutionlist%getsolution(s,is)
@@ -104,7 +101,9 @@ program mf2015fort
     do kstp=1,nstp(kper)
       !
       ! -- print kstp info
-      print *,'kstp: ', kstp
+          WRITE(*,25)KPER,KSTP
+   25     FORMAT(' Solving:  Stress period: ',i5,4x,                          &
+     &       'Time step: ',i5,4x,'Groundwater Flow Eqn.')
       !
       ! -- Advance the time step
       do is=1,solutionlist%nsolutions

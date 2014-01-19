@@ -42,11 +42,11 @@ type modeltype
     integer, dimension(10) :: crosses
     contains
     procedure :: disread
-    procedure :: modelst=>modelclassst
-    procedure :: modelrp=>modelclassrp
-    procedure :: modelad=>modelclassad
-    procedure :: fmcalc
-    procedure :: fill
+    procedure :: modelst
+    procedure :: modelrp
+    procedure :: modelad
+    procedure :: modelfmcalc
+    procedure :: modelfmfill
     procedure :: modelbd
     procedure :: printname
 end type modeltype
@@ -226,49 +226,49 @@ subroutine disread(this,filename,id)
 
 end subroutine disread
 
-subroutine modelclassst(this)
+subroutine modelst(this)
     implicit none
     class(modeltype) :: this
     class(packagetype), pointer :: p
     integer :: ip
     !
     !stress timing
-    print *,'modelclassst'
+    print *,'modelst'
     do ip=1,this%packages%npackages
         call this%packages%getpackage(p,ip)
         call p%packagest()
     enddo
-end subroutine modelclassst
+end subroutine modelst
 
-subroutine modelclassrp(this)
+subroutine modelrp(this)
     implicit none
     class(modeltype) :: this
     class(packagetype), pointer :: p
     integer :: ip
     !
     !read and prepare
-    print *,'modelclassrp'
+    print *,'modelrp'
     do ip=1,this%packages%npackages
         call this%packages%getpackage(p,ip)
         call p%packagerp()
     enddo
-end subroutine modelclassrp
+end subroutine modelrp
 
-subroutine modelclassad(this)
+subroutine modelad(this)
     implicit none
     class(modeltype) :: this
     class(packagetype), pointer :: p
     integer :: ip
     !
     !advance
-    print *,'modelclassad'
+    print *,'modelad'
     do ip=1,this%packages%npackages
         call this%packages%getpackage(p,ip)
         call p%packagead()
     enddo
-end subroutine modelclassad
+end subroutine modelad
 
-subroutine fmcalc(this)
+subroutine modelfmcalc(this)
     implicit none
     class(modeltype) :: this
     class(packagetype), pointer :: p
@@ -281,9 +281,9 @@ subroutine fmcalc(this)
         call this%packages%getpackage(p,ip)
         call p%fmcalc()
     enddo
-end subroutine fmcalc
+end subroutine modelfmcalc
 
-subroutine fill(this,amatsln,njasln)
+subroutine modelfmfill(this,amatsln,njasln)
     !fill amatsln and rhssln with amat and rhs from this model
     implicit none
     class(modeltype) :: this
@@ -291,7 +291,7 @@ subroutine fill(this,amatsln,njasln)
     integer,intent(in) :: njasln
     class(packagetype), pointer :: p
     integer :: ip,n,i,ipos
-    print *,'model fmfill'
+    print *,'modelfmfill'
     !
     !copy the model conductance into the solution amat
     do ipos=1,this%nja
@@ -308,7 +308,7 @@ subroutine fill(this,amatsln,njasln)
             amatsln(this%idxglo(ipos))=amatsln(this%idxglo(ipos))+p%hcof(i)
         enddo
     enddo
-end subroutine fill
+end subroutine modelfmfill
 
 subroutine modelbd(this)
     implicit none

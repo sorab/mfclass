@@ -358,16 +358,16 @@ subroutine solve(this)
       !set amat and rhs to zero
       call this%reset()
       !
-      !fmcalc each model
+      !modelfmcalc each model
       do im=1,this%modellist%nmodels
           call this%modellist%getmodel(mp, im)
-          call mp%fmcalc()
+          call mp%modelfmcalc()
       enddo
       !
       !fill each model
       do im=1,this%modellist%nmodels
           call this%modellist%getmodel(mp, im)
-          call mp%fill(this%amat,this%nja)
+          call mp%modelfmfill(this%amat,this%nja)
       enddo
       !
       !add cross conductance to solution amat
