@@ -77,9 +77,6 @@ module gwfmodule
   open(unit=inunit,file=filename,status='old')
 !
 ! -- Allocate and read bas and dis and then save to pointers
-  call gwfmodel%gwfglodat%pntset
-  call gwfmodel%gwfbasdat%pntset
-  call gwfmodel%gwfpardat%pntset
   CALL GLO2BAS8AR(INUNIT,CUNIT,VERSION,24,31,32,MAXUNIT,12,                    &
                     HEADNG,26,MFVNAM,29,27,30,36)
   call gwfmodel%gwfglodat%pntsav
@@ -91,21 +88,18 @@ module gwfmodule
 !
 ! -- Allocate and read bcf/lpf and then save to pointers
   IF(IUNIT(1).GT.0.OR.IUNIT(23).GT.0)THEN                                     
-    call gwfmodel%gwfbcfdat%pntset
     CALL GWF2BCFU1AR(IUNIT(1),IUNIT(22),IUNIT(23))
     call gwfmodel%gwfbcfdat%pntsav
   ENDIF
 !
 ! -- Allocate and read wel and then save to pointers
   IF(IUNIT(2).GT.0) THEN
-    call gwfmodel%gwfweldat%pntset
     CALL GWF2WEL7U1AR(IUNIT(2))
     call gwfmodel%gwfweldat%pntsav
   ENDIF
 !
 ! -- Allocate and read ghb and then save to pointers
   IF(IUNIT(7).GT.0) THEN
-    call gwfmodel%gwfghbdat%pntset
     CALL GWF2GHB7U1AR(IUNIT(7))
     call gwfmodel%gwfghbdat%pntsav
   ENDIF
