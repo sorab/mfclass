@@ -1,0 +1,24 @@
+#note that the order matters here
+list simulation.lst
+
+tdis simulation.tdis
+
+nmodels 2
+gwfmodel model1.nam 1
+gwfmodel model2.nam 2
+
+ncrosses 1
+xrs simulation.xrs 1 2
+
+nsolutions 1
+solution simulation.sms 1
+
+#nsolution_groups 1
+solution_group 1
+  mxiter 1
+  nsolutions 1
+  sms 1
+    nmodels 2
+    model 1
+    model 2
+end

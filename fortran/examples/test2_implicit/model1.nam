@@ -1,0 +1,11 @@
+#mfusg namefile for model1 model
+LIST          2 model1.out.list
+DISU         11 model1.disu
+BAS6         13 model1.bas
+LPF          15 model1.lpf
+WEL	         20 model1.wel
+GHB          21 model1.ghb
+OC           14 model1.oc
+DATA(BINARY) 50 model1.out.cbc
+DATA(BINARY) 51 model1.out.hds
+#SMS          27 model.pcgu.sms

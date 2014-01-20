@@ -2,6 +2,7 @@ module gwfmodule
   use ModelModule
   use PackageModule
   use global,only:gwfglotype,niunit
+  use PARAMMODULE,only:gwfparamtype
   use GWFBASMODULE,only:gwfbastype
   use GWFBCFMODULE,only:gwfbcftype
   use GWFGHBMODULE,only:gwfghbtype
@@ -11,6 +12,7 @@ module gwfmodule
   type, extends(modeltype) :: gwfmodeltype
     type(gwfglotype) :: gwfglodat
     type(gwfbastype) :: gwfbasdat
+    type(gwfparamtype) :: gwfpardat
     type(gwfbcftype) :: gwfbcfdat
     type(gwfghbtype) :: gwfghbdat
     type(gwfweltype) :: gwfweldat
@@ -63,7 +65,7 @@ module gwfmodule
 !    
 ! -- Create a new model and add it to the modellist container
   allocate(gwfmodel)
-  call modellist%setmodel(gwfmodel,id)    
+  call modellist%setmodel(gwfmodel,id)
   print *,'Creating gwfmodel: ', id
 !
 ! -- Open the gwf name file
@@ -72,28 +74,35 @@ module gwfmodule
   open(unit=inunit,file=filename,status='old')
 !
 ! -- Allocate and read bas and dis and then save to pointers
+  call gwfmodel%gwfglodat%pntset
+  call gwfmodel%gwfbasdat%pntset
+  call gwfmodel%gwfpardat%pntset
   CALL GLO2BAS8AR(INUNIT,CUNIT,VERSION,24,31,32,MAXUNIT,12,                    &
                     HEADNG,26,MFVNAM,29,27,30,36)
   call gwfmodel%gwfglodat%pntsav
   call gwfmodel%gwfbasdat%pntsav
+  call gwfmodel%gwfpardat%pntsav
 !
 ! -- Make a pointer to iunit for easier syntax within these routines
   iunit=>gwfmodel%gwfglodat%iunit
 !
 ! -- Allocate and read bcf/lpf and then save to pointers
   IF(IUNIT(1).GT.0.OR.IUNIT(23).GT.0)THEN                                     
+    call gwfmodel%gwfbcfdat%pntset
     CALL GWF2BCFU1AR(IUNIT(1),IUNIT(22),IUNIT(23))
     call gwfmodel%gwfbcfdat%pntsav
   ENDIF
 !
 ! -- Allocate and read wel and then save to pointers
   IF(IUNIT(2).GT.0) THEN
+    call gwfmodel%gwfweldat%pntset
     CALL GWF2WEL7U1AR(IUNIT(2))
     call gwfmodel%gwfweldat%pntsav
   ENDIF
 !
 ! -- Allocate and read ghb and then save to pointers
   IF(IUNIT(7).GT.0) THEN
+    call gwfmodel%gwfghbdat%pntset
     CALL GWF2GHB7U1AR(IUNIT(7))
     call gwfmodel%gwfghbdat%pntsav
   ENDIF
@@ -231,7 +240,12 @@ module gwfmodule
 ! -- Print routine name and set model object pointers
     print *,'gwf3fmcalc'
     call this%pntset
-!    
+!
+! -- Because global::hnew and this%x do not share memory, need to copy latest
+! -- solution into hnew so that amat can be calculated using latest heads.
+! -- langevin mf2015 todo: memory management of x and hnew
+    this%gwfglodat%hnew(:)=this%x(:)
+!
 ! -- Call package fm routines
     kkiter=1
     CALL GWF2BAS7U1FM
@@ -365,7 +379,9 @@ module gwfmodule
     class(gwfmodeltype) :: this
 ! ------------------------------------------------------------------------------
     call this%gwfglodat%pntset
+    iunit=>this%gwfglodat%iunit
     call this%gwfbasdat%pntset
+    call this%gwfpardat%pntset
     if(iunit(1).gt.0) call this%gwfbcfdat%pntset
     if(iunit(2).gt.0) call this%gwfweldat%pntset
     if(iunit(7).gt.0) call this%gwfghbdat%pntset

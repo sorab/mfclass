@@ -1,24 +1,4 @@
 C
-C -----------------------------------------------------------------------
-      MODULE PARAMMODULE
-C  Data definitions for Named Parameters
-C  Explicitly declare all variables to enable subroutines that include
-C  this file to use the IMPLICIT NONE statement.
-        PARAMETER (MXPAR=999,MXCLST=1000,MXINST=1000)
-        INTEGER,SAVE,POINTER ::ICLSUM,IPSUM,INAMLOC,NMLTAR,NZONAR,NPVAL
-        REAL,          SAVE,    DIMENSION(:),    ALLOCATABLE ::B
-        INTEGER,       SAVE,    DIMENSION(:),    ALLOCATABLE ::IACTIVE
-        INTEGER,       SAVE,    DIMENSION(:,:),  ALLOCATABLE ::IPLOC
-        INTEGER,       SAVE,    DIMENSION(:,:),  ALLOCATABLE ::IPCLST
-        INTEGER,       SAVE,    DIMENSION(:,:,:),ALLOCATABLE ::IZON
-        REAL,          SAVE,    DIMENSION(:,:,:),ALLOCATABLE ::RMLT
-        CHARACTER(LEN=10),SAVE, DIMENSION(:),    ALLOCATABLE ::PARNAM
-        CHARACTER(LEN=4), SAVE, DIMENSION(:),    ALLOCATABLE ::PARTYP
-        CHARACTER(LEN=10),SAVE, DIMENSION(:),    ALLOCATABLE ::ZONNAM
-        CHARACTER(LEN=10),SAVE, DIMENSION(:),    ALLOCATABLE ::MLTNAM
-        CHARACTER(LEN=10),SAVE, DIMENSION(:),    ALLOCATABLE ::INAME
-      END MODULE PARAMMODULE
-      
       SUBROUTINE UPARARRAL(IN,IOUT,LINE,NP)
 C     ******************************************************************
 C     Setup array parameter definition for a package.

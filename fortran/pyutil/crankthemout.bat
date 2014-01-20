@@ -6,5 +6,7 @@ python usgmod2mf2015mod.py usg_gmodules.f CLN1MODULE   CLNGLOTYPE    cln_glomodu
 python usgmod2mf2015mod.py gwf2ghb7u1.f GWFGHBMODULE   GWFGHBTYPE    gwf_ghbmodule.f90
 python usgmod2mf2015mod.py gwf2wel7u1.f GWFWELMODULE   GWFWELTYPE    gwf_welmodule.f90
 
+python usgmod2mf2015mod.py gmodules.f PARAMMODULE   GWFPARAMTYPE    gwf_parmodule.f90
+
 
 pause

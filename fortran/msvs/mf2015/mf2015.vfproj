@@ -40,6 +40,7 @@
 		<File RelativePath="..\..\src\gwf3_glomodule.f90"/>
 		<File RelativePath="..\..\src\gwf3_wel.f"/>
 		<File RelativePath="..\..\src\gwf3_welmodule.f90"/>
+		<File RelativePath="..\..\src\gwf3_parmodule.f90"/>
 		<File RelativePath="..\..\src\loose_modules.f90"/>
 		<File RelativePath="..\..\src\mf2015.f90"/>
 		<File RelativePath="..\..\src\model.f90"/>

@@ -192,7 +192,7 @@ subroutine simulation_init(simfile)
     !
     !open the simulation list file - temporary solution???
     if (filtyp.eq.'LIST') then
-      CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
+      CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,iout,INUNIT)
       fname=line(ityp1:ityp2)
       call freeunitnumber(iout)
       open(unit=iout,file=fname,status='unknown')
