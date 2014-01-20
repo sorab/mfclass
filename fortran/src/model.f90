@@ -48,6 +48,9 @@ type modeltype
     procedure :: modelfmcalc
     procedure :: modelfmfill
     procedure :: modelbd
+    procedure :: modelot
+    procedure :: modelbdentry
+    procedure :: pntset=>modelpntset
     procedure :: printname
 end type modeltype
 
@@ -323,6 +326,39 @@ subroutine modelbd(this)
         call p%packagebd(this%x)
     enddo
 end subroutine modelbd
+
+subroutine modelot(this)
+! This subroutine should be overridden by a child model if necessary.
+    implicit none
+    class(modeltype) :: this
+  return
+end subroutine modelot
+
+subroutine modelbdentry(this,text,rin,rout)
+! This subroutine should be overridden by a child model if necessary.
+    implicit none
+    class(modeltype) :: this
+    character(len=*),intent(in) :: text
+    real,intent(in) :: rin
+    real,intent(in) :: rout
+end subroutine modelbdentry
+
+  subroutine modelpntset(this)
+! ******************************************************************************
+! pntset -- Model Pointer Set
+! This subroutine should be overridden by a child model if necessary.
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
+    implicit none
+    class(modeltype) :: this
+! ------------------------------------------------------------------------------
+!
+! -- return
+    return
+  end subroutine modelpntset
+
 
 subroutine printname(this)
   implicit none

@@ -309,7 +309,7 @@ subroutine connect(this)
             enddo
         else
             !put the initial x values into the cross package stage arrays
-            call cp%fill()
+            call cp%crossfmfill()
         endif
     enddo    
 end subroutine connect
@@ -370,7 +370,9 @@ subroutine solve(this)
           call mp%modelfmfill(this%amat,this%nja)
       enddo
       !
-      !add cross conductance to solution amat
+      !add cross conductance to solution amat if implicit or
+      !or call crossfmfill to update the packages with appropriate
+      !model x values
       do ic=1,this%crosslist%ncrosses
           call this%crosslist%getcross(cp, ic)
           if(cp%implicit) then
@@ -385,7 +387,7 @@ subroutine solve(this)
                   this%amat(idiagsln)=this%amat(idiagsln)-cp%cond(i)
               enddo
           else
-              call cp%fill()
+              call cp%crossfmfill()
           endif
       enddo
       !

@@ -55,13 +55,13 @@ program mf2015fort
   ! -- Initialize each cross in crosslist
   do ic=1,crosslist%ncrosses
     call crosslist%getcross(c,ic)
-    call c%initialize()
+    call c%crossinit()
   enddo
   !
   ! -- Assign crosses to correct solutions
   do is=1,solutionlist%nsolutions
     call solutionlist%getsolution(s,is)
-    allocate(s%crosslist%crosses(1))
+    allocate(s%crosslist%crosses(1)) !todo: this solution is hardwired for 1 cros
     ipos=1
     do ic=1,crosslist%ncrosses
       call crosslist%getcross(c,ic)
@@ -126,6 +126,19 @@ program mf2015fort
         do im=1,s%modellist%nmodels
           call s%modellist%getmodel(m,im)
           call m%modelbd()
+        enddo
+      enddo
+      do ic=1,crosslist%ncrosses
+        call crosslist%getcross(c,ic)
+        call c%crossbd()
+      enddo
+      !
+      ! -- Output
+      do is=1,solutionlist%nsolutions
+        call solutionlist%getsolution(s,is)
+        do im=1,s%modellist%nmodels
+          call s%modellist%getmodel(m,im)
+          call m%modelot()
         enddo
       enddo
 

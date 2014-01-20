@@ -22,6 +22,8 @@ module gwfmodule
     procedure :: modelfmcalc=>gwf3fmcalc
     procedure :: modelfmfill=>gwf3fmfill
     procedure :: modelbd=>gwf3bd
+    procedure :: modelot=>gwf3ot
+    procedure :: modelbdentry=>gwf3bdentry
     procedure :: pntset=>gwf3pntset
   end type gwfmodeltype
   CHARACTER*40 VERSION
@@ -358,15 +360,41 @@ module gwfmodule
     do ip=1,this%packages%npackages
       call this%packages%getpackage(p,ip)
       call p%packagebd(this%x)
-      call sgwf3budentry(p%name,p%rin,p%rout)
+      call this%modelbdentry(p%name,p%rin,p%rout)
     enddo
+!
+! -- return
+    return
+  end subroutine gwf3bd
+  
+  subroutine gwf3ot(this)
+! ******************************************************************************
+! gwf3ot -- GroundWater Flow Model Output
+! Subroutine: (1) Output budget items
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
+    use tdismodule,only:kstp,kper
+    implicit none
+    class(gwfmodeltype) :: this
+    integer :: icnvg
+! ------------------------------------------------------------------------------
+!
+! -- Print routine name and set model object pointers
+    print *,'gwf3ot'
+    call this%pntset
+!      
+! -- langevin mf2015 todo: get icnvg in here, also allocating flowja for budget
+! -- calculations.
+    icnvg=1 
 !
 ! -- Output control output
     CALL GWF2BAS7OT(kstp,kper,ICNVG,1)
 !
 ! -- return
     return
-  end subroutine gwf3bd
+  end subroutine gwf3ot
   
   subroutine gwf3pntset(this)
 ! ******************************************************************************
@@ -428,19 +456,32 @@ module gwfmodule
     return
   end subroutine package_create  
  
-  subroutine sgwf3budentry(text,rin,rout)
+  subroutine gwf3bdentry(this,text,rin,rout)
+! ******************************************************************************
+! gwf3bdentry -- GroundWater Flow Model Budget Entry
+! This subroutine adds a budget entry to the flow budget.  It was added as
+! a method for the gwf3 model object so that the cross object could add its
+! contributions.
+! Subroutine: (1) sets the pointer
+!             (2) adds the entry to the vbvl array in gwfbasmodule
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
     USE GWFBASMODULE,ONLY:MSUM,DELT,VBVL,VBNM
     implicit none
-    character(len=*) :: text
+    class(gwfmodeltype) :: this
+    character(len=*),intent(in) :: text
     real,intent(in) :: rin
     real,intent(in) :: rout
+    call this%pntset
     VBVL(3,MSUM)=RIN
     VBVL(1,MSUM)=VBVL(1,MSUM)+RIN*DELT
     VBVL(4,MSUM)=ROUT
     VBVL(2,MSUM)=VBVL(2,MSUM)+ROUT*DELT
     VBNM(MSUM)=TEXT
     MSUM=MSUM+1
-  end subroutine sgwf3budentry
+  end subroutine gwf3bdentry
   
   end module gwfmodule
   

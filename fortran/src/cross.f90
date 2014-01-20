@@ -43,8 +43,9 @@ type crosstype
     type(ghbtype),pointer :: p1
     type(ghbtype),pointer :: p2
     contains
-    procedure :: initialize
-    procedure :: fill
+    procedure :: crossinit
+    procedure :: crossfmfill
+    procedure :: crossbd
     !procedure :: fill_explicit
     !procedure :: fill_implicit
 end type crosstype
@@ -151,7 +152,7 @@ subroutine cross_create(filename,id,m1id,m2id)
 
 end subroutine cross_create
 
-subroutine initialize(this)
+subroutine crossinit(this)
     implicit none
     class(crosstype) :: this
     class(packagetype), pointer :: packobj1,packobj2
@@ -167,6 +168,7 @@ subroutine initialize(this)
         !create a ghb-like package for model 1
         ipakid=this%m1%packages%npackages+1
         packname='XRS '//this%m2%name
+        packname=adjustr(packname)
         call ghb_new(this%p1,packname,0,this%ncross,this%ncross, &
                      this%nodem1,this%cond)
         packobj1=>this%p1
@@ -175,14 +177,15 @@ subroutine initialize(this)
         !create a ghb-like package for model 2
         ipakid=this%m2%packages%npackages+1
         packname='XRS '//this%m1%name
+        packname=adjustr(packname)
         call ghb_new(this%p2,packname,0,this%ncross,this%ncross, &
                      this%nodem2,this%cond)
         packobj2=>this%p2
         call this%m2%packages%setpackage(packobj2,ipakid)
     endif
-end subroutine initialize
+end subroutine crossinit
 
-subroutine fill(this)
+subroutine crossfmfill(this)
     implicit none
     class(crosstype) :: this
     !class(packagetype), pointer :: p1,p2
@@ -195,7 +198,46 @@ subroutine fill(this)
             this%p2%stage(i)=this%m1%x(n1)
         enddo
     endif
-end subroutine fill
+end subroutine crossfmfill
+
+subroutine crossbd(this)
+! -- langevin mf2015 todo -- need to write budget terms to cbc
+! -- langevin mf2015 todo: need to put ibound check in here
+  implicit none
+  class(crosstype) :: this
+  character(len=16) :: packname
+  integer :: i,n1,n2
+  real :: rin,rout,rate,zero
+  double precision :: ratin,ratout,rrate
+  zero=0.
+  ratin=zero
+  ratout=zero
+  if(this%implicit) then
+    do i=1,this%ncross
+      n1=this%nodem1(i)
+      n2=this%nodem2(i)
+      rrate=this%cond(i)*this%m2%x(n2)-this%cond(i)*this%m1%x(n1)
+      rate=rrate
+      if(rate<zero) then
+        ratout=ratout-rrate
+      else
+        ratin=ratin+rrate
+      endif
+    enddo
+    rin=ratin
+    rout=ratout
+!
+! -- Add the budget terms to model 1
+    packname='XRS '//this%m2%name
+    packname=adjustr(packname)
+    call this%m1%modelbdentry(packname,rin,rout)
+!
+! -- Add the budget terms to model 2
+    packname='XRS '//this%m1%name
+    packname=adjustr(packname)
+    call this%m2%modelbdentry(packname,rout,rin)
+  endif
+end subroutine crossbd
 
 subroutine printname(this)
   implicit none
