@@ -2,26 +2,30 @@
 list simulation.lst
 
 #models
-nmodels 1
+nmodels 2
 gwfmodel model1.nam 1
+gwfmodel model2.nam 2
 
 #tdis
 tdis simulation.tdis
 
 #crosses
-ncrosses 0
-#xrs model.xrs 1 2
+ncrosses 1
+xrs simulation.xrs 1 2
 
 #solutions
-nsolutions 1
+nsolutions 2
 solution model1.sms 1
-#solution model2.sms 2
+solution model2.sms 2
 
 #solution groups
 solution_group 1
   mxiter 3
-  nsolutions 1
+  nsolutions 2
   sms 1
     nmodels 1
     model 1
+  sms 2
+    nmodels 1
+    model 2
 end

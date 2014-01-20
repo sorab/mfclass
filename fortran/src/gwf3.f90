@@ -318,21 +318,22 @@ module gwfmodule
 !    SPECIFICATIONS:
 ! ------------------------------------------------------------------------------
     use tdismodule,only:kstp,kper
+    use GLOBAL,only:flowja
     implicit none
     class(gwfmodeltype) :: this
     class(packagetype), pointer :: p
     integer :: ip,icnvg
 ! ------------------------------------------------------------------------------
 !
-! -- langevin mf2015 todo: get icnvg in here, also allocating flowja for budget
-! -- calculations.
-    icnvg=1 
-    ALLOCATE(this%gwfglodat%FLOWJA(this%gwfglodat%NJA))
-!
 ! -- Print routine name and set model object pointers
     print *,'gwf3bd'
     call this%pntset
 !      
+! -- langevin mf2015 todo: get icnvg in here, also allocating flowja for budget
+! -- calculations.
+    icnvg=1 
+    ALLOCATE(FLOWJA(this%gwfglodat%NJA))
+!
 ! -- Push the solution results into hnew
 ! -- langevin mf2015 todo: memory management of x and hnew
     this%gwfglodat%hnew(:)=this%x(:)
@@ -350,7 +351,7 @@ module gwfmodule
       CALL GWF2BCFU1BDCHWR(kstp,kper)  
       CALL GWF2BCFU1BDADJWR(kstp,kper)
     ENDIF
-    DEALLOCATE(this%gwfglodat%FLOWJA)
+    DEALLOCATE(FLOWJA)
     IF(IUNIT(2).GT.0) CALL GWF2WEL7U1BD(kstp,kper)
     IF(IUNIT(7).GT.0) CALL GWF2GHB7U1BD(kstp,kper)
     do ip=1,this%packages%npackages

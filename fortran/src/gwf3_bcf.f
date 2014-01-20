@@ -1930,11 +1930,13 @@ C     SPECIFICATIONS:
 C     ------------------------------------------------------------------
       USE GLOBAL, ONLY:NCOL,NROW,NLAY,IBOUND,HNEW,BUFF,NODLAY,NEQS,
      1  TOP,IOUT,NODES,NJA,IA,JA,JAS,IUNSTR,IVC,ISYM,ITRNSP,issflg,
-     1  Sn,So,INGNC,INGNC2,INGNCn,FLOWJA,NOVFC,iunsat
+     1  Sn,So,INGNC,INGNC2,INGNCn,FLOWJA,NOVFC,iunsat,
+     1  amatfl=>amat
       USE GWFBASMODULE,ONLY:ICBCFL,DELT,PERTIM,TOTIM,ICHFLG
       USE GWFBCFMODULE,ONLY:IBCFCB,LAYCON
       USE GWTBCTMODULE, ONLY: CBCF
-       USE SMSMODULE, ONLY: AMATFL
+      !langevin mf2015: can't use smsmodule here: USE SMSMODULE, ONLY: AMATFL
+      !langevin mf2015: using global amat instead
 C
       DOUBLE PRECISION HD,TMP,HDIFF
 C     ------------------------------------------------------------------
