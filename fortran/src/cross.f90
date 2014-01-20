@@ -155,7 +155,7 @@ subroutine initialize(this)
     implicit none
     class(crosstype) :: this
     class(packagetype), pointer :: packobj1,packobj2
-    character(len=20) :: packname
+    character(len=16) :: packname
     integer :: i,ipakid
     print *,'initialize'
     !
@@ -166,7 +166,7 @@ subroutine initialize(this)
         !
         !create a ghb-like package for model 1
         ipakid=this%m1%packages%npackages+1
-        packname=this%m1%name//'_to_'//this%m2%name
+        packname='XRS '//this%m2%name
         call ghb_new(this%p1,packname,0,this%ncross,this%ncross, &
                      this%nodem1,this%cond)
         packobj1=>this%p1
@@ -174,7 +174,7 @@ subroutine initialize(this)
         !
         !create a ghb-like package for model 2
         ipakid=this%m2%packages%npackages+1
-        packname=this%m2%name//'_to_'//this%m1%name
+        packname='XRS '//this%m1%name
         call ghb_new(this%p2,packname,0,this%ncross,this%ncross, &
                      this%nodem2,this%cond)
         packobj2=>this%p2

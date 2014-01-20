@@ -320,7 +320,7 @@ subroutine modelbd(this)
     print *,'modelbd'
     do ip=1,this%packages%npackages
         call this%packages%getpackage(p,ip)
-        call p%packagebd()
+        call p%packagebd(this%x)
     enddo
 end subroutine modelbd
 
@@ -331,4 +331,3 @@ subroutine printname(this)
 end subroutine printname
 
 end module ModelModule
-

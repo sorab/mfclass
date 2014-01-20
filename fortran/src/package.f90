@@ -21,6 +21,8 @@ type packagetype
     integer :: inunit
     integer :: maxbound
     integer :: nbound
+    real :: rin
+    real :: rout 
     integer,pointer,dimension(:) :: nodelist
     double precision, allocatable, dimension(:) :: hcof
     double precision, allocatable, dimension(:) :: rhs
@@ -86,9 +88,10 @@ subroutine packagefmcalc(this)
     print *, 'you should never see this.  this should be overridden.'
 end subroutine packagefmcalc
 
-subroutine packagebd(this)
+subroutine packagebd(this,x)
     implicit none
     class(packagetype) :: this
+    double precision,dimension(*),intent(in) :: x
     print *, 'you should never see this.  this should be overridden.'
 end subroutine packagebd
 

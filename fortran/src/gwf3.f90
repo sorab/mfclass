@@ -67,6 +67,7 @@ module gwfmodule
   allocate(gwfmodel)
   call modellist%setmodel(gwfmodel,id)
   print *,'Creating gwfmodel: ', id
+  write(gwfmodel%name,'(a4,i1)') 'GWF_',id
 !
 ! -- Open the gwf name file
   call freeunitnumber(inunit)
@@ -356,7 +357,8 @@ module gwfmodule
     IF(IUNIT(7).GT.0) CALL GWF2GHB7U1BD(kstp,kper)
     do ip=1,this%packages%npackages
       call this%packages%getpackage(p,ip)
-      call p%packagebd()
+      call p%packagebd(this%x)
+      call sgwf3budentry(p%name,p%rin,p%rout)
     enddo
 !
 ! -- Output control output
@@ -425,5 +427,20 @@ module gwfmodule
 ! -- return
     return
   end subroutine package_create  
+ 
+  subroutine sgwf3budentry(text,rin,rout)
+    USE GWFBASMODULE,ONLY:MSUM,DELT,VBVL,VBNM
+    implicit none
+    character(len=*) :: text
+    real,intent(in) :: rin
+    real,intent(in) :: rout
+    VBVL(3,MSUM)=RIN
+    VBVL(1,MSUM)=VBVL(1,MSUM)+RIN*DELT
+    VBVL(4,MSUM)=ROUT
+    VBVL(2,MSUM)=VBVL(2,MSUM)+ROUT*DELT
+    VBNM(MSUM)=TEXT
+    MSUM=MSUM+1
+  end subroutine sgwf3budentry
   
-end module gwfmodule
+  end module gwfmodule
+  
