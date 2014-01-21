@@ -16,6 +16,8 @@ public :: solutiontype
 public :: solution_create
 public :: solution_list_init
 public :: solutiongrouplist
+public :: solutiongrouptype
+public :: nsolgps
 public :: neq,nja,ia,ja,amat,rhs,x,active
 
 type :: solutioncontainer
@@ -83,9 +85,12 @@ type :: solutiongrouptype
     integer :: mxiter
 !    double precision :: xtol
     integer :: nsolutions
-    type(solutiontype),allocatable,dimension(:) :: solutions
+    integer,dimension(:),allocatable :: solutionidlist
 end type solutiongrouptype
-type(solutiongrouptype),dimension(1) :: solutiongrouplist
+
+!number of solution groups (nsolgps) in the solutiongrouplist
+integer :: nsolgps
+type(solutiongrouptype),dimension(:),pointer :: solutiongrouplist
 
 contains
 

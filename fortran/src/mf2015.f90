@@ -18,6 +18,7 @@ program mf2015fort
   use CrossModule
   use TdisModule
   implicit none
+  type(solutiongrouptype), pointer :: sgp
   class(modeltype), pointer :: m
   class(solutiontype), pointer :: s
   class(crosstype), pointer :: c
@@ -27,7 +28,7 @@ program mf2015fort
   PARAMETER (VERSION='0.1.00 01/14/2014')
   PARAMETER (MFVNAM='-2015')
   INTEGER :: IBDT(8)
-  INTEGER :: I
+  INTEGER :: I,isg,sid,ipicard,mxiter
 ! ------------------------------------------------------------------------------
 !
 ! -- Write banner to screen and define constants
@@ -114,10 +115,17 @@ program mf2015fort
         enddo
       enddo
       !
-      ! -- Solve each solution
-      do is=1,solutionlist%nsolutions
-        call solutionlist%getsolution(s,is)
-        call s%solve()
+      ! -- Solve each solution group and each solution
+      do isg=1,nsolgps
+        sgp=>solutiongrouplist(isg)
+        do ipicard=1,sgp%mxiter
+          print *,'Picard iteration: ', ipicard
+          do is=1,sgp%nsolutions
+            sid=sgp%solutionidlist(is)
+            call solutionlist%getsolution(s,sid)
+            call s%solve()
+          enddo
+        enddo
       enddo
     !
       ! -- Budget
@@ -177,8 +185,9 @@ subroutine simulation_init(simfile)
   character(len=300) :: line,fname,tag
   character(len=20) :: filtyp
   integer :: lloc,ityp1,ityp2,n,inunit,id,sid,mid,sgid
-  integer :: nsolutions, nmodels, ncrosses, m1, m2,nsol,nmod,im
+  integer :: nsolutions, nmodels, ncrosses, m1, m2,nsol,nmod,im,isgp
   real :: r
+  type(solutiongrouptype), pointer :: sgp
   class(solutiontype), pointer :: sp
   class(modeltype), pointer :: mp
 ! ------------------------------------------------------------------------------
@@ -261,24 +270,30 @@ subroutine simulation_init(simfile)
       id=id+1
     !
     !solution groups
-    elseif(filtyp=='SOLUTION_GROUP') then
-      CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,sgid,R,IOUT,INUNIT)
-      solutiongrouplist(1)%id=sgid
-      read(inunit,*) fname,solutiongrouplist(sgid)%mxiter
-      read(inunit,*) fname,nsol
-      solutiongrouplist(sgid)%nsolutions=nsol
-      allocate(solutiongrouplist(sgid)%solutions(nsol))
-      do n=1,nsol
-        read(inunit,*) fname,sid
-        call solutionlist%getsolution(sp,sid)
-        read(inunit,*) fname,nmod
-        allocate(sp%modellist%models(nmod))
-        do im=1,nmod
-          read(inunit,*) fname,mid
-          call modellist%getmodel(mp,mid)
-          call sp%addmodel(mp,im)
-        enddo
-      enddo
+    elseif(filtyp=='NSOLUTION_GROUPS') then  
+      CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,nsolgps,R,IOUT,INUNIT)
+      allocate(solutiongrouplist(nsolgps))
+      do isgp=1,nsolgps
+        sgp=>solutiongrouplist(isgp)
+        read(inunit,*) fname,sgid
+        sgp%id=sgid
+        read(inunit,*) fname,sgp%mxiter
+        read(inunit,*) fname,nsol
+        sgp%nsolutions=nsol
+        allocate(sgp%solutionidlist(nsol))
+        do n=1,nsol
+          read(inunit,*) fname,sid
+          call solutionlist%getsolution(sp,sid)
+          sgp%solutionidlist(n)=sid
+          read(inunit,*) fname,nmod
+          allocate(sp%modellist%models(nmod))
+          do im=1,nmod
+            read(inunit,*) fname,mid
+            call modellist%getmodel(mp,mid)
+            call sp%addmodel(mp,im)
+          enddo !end of models
+        enddo !end of solutions
+      enddo !end of solution groups
     endif
     cycle
 100 exit        

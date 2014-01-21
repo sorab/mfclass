@@ -19,6 +19,7 @@ solution model1.sms 1
 solution model2.sms 2
 
 #solution groups
+nsolution_groups 1
 solution_group 1
   mxiter 3
   nsolutions 2

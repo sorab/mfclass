@@ -13,7 +13,8 @@ xrs simulation.xrs 1 2
 nsolutions 1
 solution simulation.sms 1
 
-#nsolution_groups 1
+#solution groups
+nsolution_groups 1
 solution_group 1
   mxiter 1
   nsolutions 1
