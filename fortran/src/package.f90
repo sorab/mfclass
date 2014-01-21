@@ -89,10 +89,28 @@ subroutine packagefmcalc(this)
 end subroutine packagefmcalc
 
 subroutine packagebd(this,x)
+! -- langevin mf2015 todo: need to put ibound check in here
     implicit none
     class(packagetype) :: this
     double precision,dimension(*),intent(in) :: x
-    print *, 'you should never see this.  this should be overridden.'
+    integer :: i,node
+    real :: rate,zero
+    double precision ratin,ratout,rrate
+    zero=0.
+    ratin=zero
+    ratout=zero
+    do i=1,this%nbound
+        node=this%nodelist(i)
+        rrate=this%hcof(i)*x(node)-this%rhs(i)
+        rate=rrate
+        if(rate<zero) then
+          ratout=ratout-rrate
+        else
+          ratin=ratin+rrate
+        endif
+    enddo
+    this%rin=ratin
+    this%rout=ratout
 end subroutine packagebd
 
 end module PackageModule

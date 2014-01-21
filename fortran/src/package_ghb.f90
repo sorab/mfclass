@@ -11,7 +11,6 @@ type, extends(packagetype) :: ghbtype
     procedure :: ghb_allocate
     procedure :: packagerp
     procedure :: fmcalc => ghbfmcalc
-    procedure :: packagebd=>ghbbd
 end type ghbtype
 
 contains
@@ -79,30 +78,5 @@ subroutine ghbfmcalc(this)
         this%rhs(i) = -this%cond(i) * this%stage(i)
     enddo
 end subroutine ghbfmcalc
-
-subroutine ghbbd(this,x)
-! -- langevin mf2015 todo: need to put ibound check in here
-    implicit none
-    class(ghbtype) :: this
-    double precision,dimension(*),intent(in) :: x
-    integer :: i,node
-    real :: rate,zero
-    double precision ratin,ratout,rrate
-    zero=0.
-    ratin=zero
-    ratout=zero
-    do i=1,this%nbound
-        node=this%nodelist(i)
-        rrate=this%cond(i)*this%stage(i)-this%cond(i)*x(node)
-        rate=rrate
-        if(rate<zero) then
-          ratout=ratout-rrate
-        else
-          ratin=ratin+rrate
-        endif
-    enddo
-    this%rin=ratin
-    this%rout=ratout
-end subroutine ghbbd
 
 end module ghbmodule
