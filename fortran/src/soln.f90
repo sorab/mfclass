@@ -1,37 +1,37 @@
 
 module SOLUTIONMODULE
-use ModelModule
-use CrossModule
-use sparsemodule, only:sparsematrix
-use SMSMODULE
-!use MSMSCLASS
-use XMDMODULE
-use MXMDCLASS
-use PCGUMODULE
-use MPCGUCLASS
-implicit none
-private
-public :: solutionlist
-public :: solutiontype
-public :: solution_create
-public :: solution_list_init
-public :: solutiongrouplist
-public :: solutiongrouptype
-public :: nsolgps
-public :: neq,nja,ia,ja,amat,rhs,x,active
+  use ModelModule
+  use CrossModule
+  use sparsemodule, only:sparsematrix
+  use SMSMODULE
+  !use MSMSCLASS
+  use XMDMODULE
+  use MXMDCLASS
+  use PCGUMODULE
+  use MPCGUCLASS
+  implicit none
+  private
+  public :: solutionlist
+  public :: solutiontype
+  public :: solution_create
+  public :: solution_list_init
+  public :: solutiongrouplist
+  public :: solutiongrouptype
+  public :: nsolgps
+  public :: neq,nja,ia,ja,amat,rhs,x,active
 
-type :: solutioncontainer
+  type :: solutioncontainer
     class(solutiontype), pointer :: obj
-end type solutioncontainer
+  end type solutioncontainer
 
-type solutionlisttype
+  type solutionlisttype
     integer :: nsolutions = 0
     type(solutioncontainer), allocatable, dimension(:) :: solutions
     contains
     procedure :: setsolution
     procedure :: getsolution
-end type solutionlisttype
-type(solutionlisttype) :: solutionlist
+  end type solutionlisttype
+  type(solutionlisttype) :: solutionlist
 
   integer, save, pointer :: neq
   integer, save, pointer :: nja
@@ -46,8 +46,6 @@ type(solutionlisttype) :: solutionlist
     character(len=300) :: fname
     integer :: iu
     character(len=20) :: name
-  !  integer :: mxiter
-  !  double precision :: xtol
     integer, pointer :: neq
     integer, pointer :: nja
     integer, pointer, dimension(:), contiguous :: ia
@@ -59,113 +57,152 @@ type(solutionlisttype) :: solutionlist
     type(SMS_DATA) :: sms
     type(XMD_DATA) :: xmd
     type(PCGU_DATA) :: pcgu
-    !integer :: nmodels=0
-    !integer, dimension(10) :: imodels
-      type(modellisttype) :: modellist
-      type(crosslisttype) :: crosslist
-    !integer :: ncrosses=0
-    !integer, dimension(10) :: icrosses
+    type(modellisttype) :: modellist
+    type(crosslisttype) :: crosslist
     type(sparsematrix) :: sparse
     contains
     procedure :: initialize
     procedure :: reset
     procedure :: addmodel
     procedure :: addcross
+    procedure :: slnassigncrosses
     procedure :: connect
     procedure :: smsinit
     procedure :: solve
     procedure :: save
     procedure :: PNTSAV => solution_pntsav
     procedure :: PNTSET => solution_pntset
-  
   end type solutiontype
 
-type :: solutiongrouptype
+  type :: solutiongrouptype
     integer :: id
     integer :: mxiter
-!    double precision :: xtol
     integer :: nsolutions
     integer,dimension(:),allocatable :: solutionidlist
-end type solutiongrouptype
+  end type solutiongrouptype
 
-!number of solution groups (nsolgps) in the solutiongrouplist
-integer :: nsolgps
-type(solutiongrouptype),dimension(:),pointer :: solutiongrouplist
+  !number of solution groups (nsolgps) in the solutiongrouplist
+  integer :: nsolgps
+  type(solutiongrouptype),dimension(:),pointer :: solutiongrouplist
 
 contains
 
-subroutine setsolution(this, newsolution, ipos)
+  subroutine solution_list_init(nsolutions)
+! ******************************************************************************
+! solution_list_init -- Set size of solutionlist
+! solutionlist is a list (actually an allocatable array) that contains all of
+! the solutions that are part of the simulation.
+! Subroutine: (1) allocate size of solutionlist%solutions
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
+    implicit none
+    integer,intent(in) :: nsolutions
+    allocate(solutionlist%solutions(nsolutions))
+!
+! -- return
+    return
+  end subroutine solution_list_init
+
+  subroutine setsolution(this, newsolution, ipos)
+! ******************************************************************************
+! setsolution -- Set Solution
+! For this solutionlist, set the pointer in position ipos to newsolution
+! Subroutine: (1) point the solution to newsolution 
+!             (2) increase this%nsolutions to reflect the number of stored 
+!                 solutions
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
     implicit none
     class(solutionlisttype) :: this
     class(solutiontype), target, intent(in) :: newsolution;
     integer, intent(in) :: ipos
+! ------------------------------------------------------------------------------
+!
     this%solutions(ipos)%obj => newsolution
     this%nsolutions=max(ipos,this%nsolutions)
-end subroutine setsolution
+!
+! -- return
+    return
+  end subroutine setsolution
 
-subroutine getsolution(this, thesolution, ipos)
+  subroutine getsolution(this, thesolution, ipos)
+! ******************************************************************************
+! getsolution -- Get Solution
+! For this solutionlist, point the solution to the one in position ipos
+! Subroutine: (1) point the solution to thesolution 
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
     implicit none
     class(solutionlisttype) :: this
     class(solutiontype), pointer :: thesolution
     integer, intent(in) :: ipos
+! ------------------------------------------------------------------------------
+!
     thesolution => this%solutions(ipos)%obj
-end subroutine getsolution
+!
+! -- return
+    return
+  end subroutine getsolution
 
-subroutine solution_list_init(nsolutions)
-    implicit none
-    integer,intent(in) :: nsolutions
-    allocate(solutionlist%solutions(nsolutions))
-end subroutine solution_list_init
-
-subroutine solution_create(filename,id)
+  subroutine solution_create(filename,id)
+! ******************************************************************************
+! solution_create -- Create a New Solution 
+! Using the data in filename,  assign this new solution an id number and store 
+! the solution in the solutionlist.
+! Subroutine: (1) allocate solution and assign id and name
+!             (2) open the filename for later reading 
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
+    use SimModule,only:iout
     implicit none
     character(len=*),intent(in) :: filename
     integer,intent(in) :: id
     character(len=300) :: line,fname
     character(len=20) :: filtyp
-    integer :: lloc,ityp1,ityp2,n,iout,inunit,npackages,ipak
+    integer :: lloc,ityp1,ityp2,n,inunit,npackages,ipak
     real :: r
     type(solutiontype), pointer :: solution
-    !
-    print *,'Creating solution: ', id
-    !
-    !create a new solution and add it to the solutionlist container
+! ------------------------------------------------------------------------------
+!
+! -- Create a new solution and add it to the solutionlist container
     allocate(solution)
     call solutionlist%setsolution(solution,id)
     solution%id=id
-    !
-    !open and read the solution input file
+    write(solution%name,'(a4,i1)') 'SLN_',id
+!
+! -- Open solution input file for reading later after problem size is known
     call freeunitnumber(solution%iu)
-    print *, 'opening solution namefile on unit: ', solution%iu
+    write(iout,'(/a,a)') ' Creating solution: ', solution%name
+    WRITE(iout,'(a,a)') ' Using solution input file: ',trim(filename)
+    WRITE(iout,'(a,i6)') ' On unit number: ',solution%iu
     open(unit=solution%iu,file=filename)
-!    do
-!        !read line and skip if necessary
-!        read(solution%iu,'(a)',end=100) line
-!        if(line.eq.' ') cycle
-!        if(line(1:1).eq.'#') cycle
-!        !
-!        !decode
-!        lloc=1
-!        CALL URWORD(LINE,LLOC,ITYP1,ITYP2,1,N,R,IOUT,INUNIT)
-!        filtyp=line(ityp1:ityp2)
-!        !
-!        if(filtyp.eq.'MXITER') then
-!            CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,solution%mxiter,R,IOUT,INUNIT)
-!        elseif(filtyp.eq.'XTOL') then
-!            CALL URWORD(LINE,LLOC,ITYP1,ITYP2,3,N,R,IOUT,INUNIT)
-!            solution%xtol=r
-!        else
-!            print *, 'unknown file type in solution file: ', filtyp
-!        endif
-!    cycle
-!100 exit        
-!    enddo
-!    close(solution%iu)
-end subroutine solution_create
+!
+! -- return
+    return
+  end subroutine solution_create
 
-subroutine initialize(this)
-    !this subroutine must be called after models and crosses
-    !have been added
+  subroutine initialize(this)
+! ******************************************************************************
+! initialize -- Initialize This Solution
+! Initialize the solution.  Must be called after the models and crosses have 
+! been added to this solution.
+! Subroutine: (1) Allocate neq and nja
+!             (2) Assign model offsets and solution ids
+!             (3) Allocate and initialize the solution arrays
+!             (4) Point each model's x and rhs arrays
+!             (5) Initialize the sparsematrix instance
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
     use ModelModule
     implicit none
     class(solutiontype) :: this
@@ -173,7 +210,9 @@ subroutine initialize(this)
     integer :: i
     integer :: modelid
     integer, allocatable, dimension(:) :: rowmaxnnz
-    !allocate and initialize neq and nja
+! ------------------------------------------------------------------------------
+!
+! -- Allocate and initialize neq and nja
     allocate(this%neq)
     allocate(this%nja)
     this%neq = 0
@@ -186,82 +225,175 @@ subroutine initialize(this)
         this%neq=this%neq+mp%neq
         mp%solutionid=this%id
     enddo
-    !
-    !allocate and initialize solution arrays
+!
+! -- Allocate and initialize solution arrays
     allocate(this%ia(this%neq+1))
     allocate(this%x(this%neq))
     allocate(this%rhs(this%neq))
     do i=1,this%neq
-        this%x(i) = 0.0d0
+      this%x(i) = 0.0d0
     enddo
-    !
-    !go through each model and point x and rhs to solution
+!
+! -- Go through each model and point x and rhs to solution
     do i=1,this%modellist%nmodels
-        call this%modellist%getmodel(mp, i)
-        mp%x=>this%x(mp%offset+1:mp%offset+mp%neq)
-        mp%rhs=>this%rhs(mp%offset+1:mp%offset+mp%neq)
+      call this%modellist%getmodel(mp, i)
+      mp%x=>this%x(mp%offset+1:mp%offset+mp%neq)
+      mp%rhs=>this%rhs(mp%offset+1:mp%offset+mp%neq)
     enddo
-    !
-    !create the sparsematrix instance
+!
+! -- Create the sparsematrix instance
     allocate(rowmaxnnz(this%neq))
     do i=1,this%neq
         rowmaxnnz(i)=4
     enddo
     call this%sparse%init(this%neq,this%neq,rowmaxnnz)
     deallocate(rowmaxnnz)
-end subroutine initialize
+!
+! -- return
+    return
+  end subroutine initialize
 
-subroutine addmodel(this, model, ipos)
+  subroutine addmodel(this, model, ipos)
+! ******************************************************************************
+! addmodel -- Add Model
+! Subroutine: (1) add a model to this%modellist 
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
     implicit none
     class(solutiontype) :: this
     class(modeltype),intent(in) :: model
     integer,intent(in) :: ipos
+! ------------------------------------------------------------------------------
+!
     call this%modellist%setmodel(model,ipos)
-end subroutine addmodel
+!
+! -- return
+    return
+  end subroutine addmodel
 
-subroutine addcross(this, cross, ipos)
+  subroutine addcross(this, cross, ipos)
+! ******************************************************************************
+! addcross -- Add Cross
+! Subroutine: (1) add a cross to this%crosslist
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
     implicit none
     class(solutiontype) :: this
     type(crosstype),intent(in) :: cross
     integer,intent(in) :: ipos
+! ------------------------------------------------------------------------------
+!
     call this%crosslist%setcross(cross,ipos)
-end subroutine addcross
+!
+! -- return
+    return
+  end subroutine addcross
 
-subroutine connect(this)
+  subroutine slnassigncrosses(this)
+! ******************************************************************************
+! slnassigncross -- Assign crosses to this solution
+! Subroutine: (1) count the number of crosses for this solution, 
+!             (2) allocate this%crosslist,
+!             (3) assign the appropriate crosses to this%crosslist
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
+    implicit none
+    class(solutiontype) :: this
+    class(crosstype), pointer :: c
+    integer :: ncross,ic,ipos
+! ------------------------------------------------------------------------------
+!
+! -- Count the number of crosses for this solution.   If both models for a cross
+! -- belong to this solution, then this counts as only one cross.
+    ncross=0
+    do ic=1,crosslist%ncrosses
+      call crosslist%getcross(c,ic)
+      if(c%m1%solutionid==this%id) then
+        ncross=ncross+1
+        cycle
+      elseif(c%m2%solutionid==this%id) then
+        ncross=ncross+1
+        cycle
+      endif
+    enddo
+!
+! -- Allocate the cross list for this solution
+    allocate(this%crosslist%crosses(ncross))
+!
+! -- Now add each cross to this crosslist
+    ipos=1
+    do ic=1,crosslist%ncrosses
+      call crosslist%getcross(c,ic)
+      if(c%m1%solutionid==this%id) then
+        call this%addcross(c,ipos)
+        ipos=ipos+1
+        cycle
+      elseif(c%m2%solutionid==this%id) then
+        call this%addcross(c,ipos)
+        ipos=ipos+1
+        cycle
+      endif
+    enddo
+!
+! -- return
+    return
+  end subroutine slnassigncrosses
+
+  subroutine connect(this)
+! ******************************************************************************
+! connect -- Assign Connections
+! Main workhorse method for solution.  This goes through all the models and all
+! the connections and builds up the sparse matrix.
+! Subroutine: (1) Add internal model connections, 
+!             (2) Add cross terms,
+!             (3) Allocate solution arrays
+!             (4) Create mapping arrays
+!             (5) Fill cross term values if necessary
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
     implicit none
     class(solutiontype) :: this
     class(modeltype), pointer :: mp,m1,m2
     class(crosstype), pointer :: cp
     integer :: im,ic,i,j,jj,iglo,jglo,n,ierror,ipos
     integer :: istart,istop
-    !
-    !add internal model connections
+! ------------------------------------------------------------------------------
+!
+! -- Add internal model connections to sparse
     do im=1,this%modellist%nmodels
-        call this%modellist%getmodel(mp, im)
-        do i=1,mp%neq
-            do jj=mp%ia(i),mp%ia(i+1)-1
-                j=mp%ja(jj)
-                iglo=i+mp%offset
-                jglo=j+mp%offset
-                call this%sparse%addconnection(iglo,jglo,1)
-            enddo
+      call this%modellist%getmodel(mp, im)
+      do i=1,mp%neq
+        do jj=mp%ia(i),mp%ia(i+1)-1
+          j=mp%ja(jj)
+          iglo=i+mp%offset
+          jglo=j+mp%offset
+          call this%sparse%addconnection(iglo,jglo,1)
         enddo
+      enddo
     enddo
-    !
-    !add the cross terms
+!
+! -- Add the cross terms to sparse
     do ic=1,this%crosslist%ncrosses
-        call this%crosslist%getcross(cp, ic)
-        if(.not. cp%implicit) cycle
-        do n=1,cp%ncross
-            iglo=cp%nodem1(n)+cp%m1%offset
-            jglo=cp%nodem2(n)+cp%m2%offset
-            call this%sparse%addconnection(iglo,jglo,1)
-            call this%sparse%addconnection(jglo,iglo,1)
-        enddo
+      call this%crosslist%getcross(cp, ic)
+      if(.not. cp%implicit) cycle
+      do n=1,cp%ncross
+        iglo=cp%nodem1(n)+cp%m1%offset
+        jglo=cp%nodem2(n)+cp%m2%offset
+        call this%sparse%addconnection(iglo,jglo,1)
+        call this%sparse%addconnection(jglo,iglo,1)
+      enddo
     enddo
-    !
-    !the number of non-zero array values are now known so
-    !ia and ja can be created from sparse. then destroy sparse
+!
+! -- The number of non-zero array values are now known so
+! -- ia and ja can be created from sparse. then destroy sparse
     this%nja=this%sparse%nnz
     allocate(this%ja(this%nja))
     allocate(this%amat(this%nja))
@@ -269,82 +401,112 @@ subroutine connect(this)
     call this%sparse%sort()
     call this%sparse%filliaja(this%ia,this%ja,ierror)
     call this%sparse%destroy()
-    !fill active
+!
+! -- fill active
     do n = 1, this%neq
       this%active(n) = 1
     end do
-    !
-    !create mapping arrays for each model
+!
+! -- Create mapping arrays for each model
     do im=1,this%modellist%nmodels
-        call this%modellist%getmodel(mp, im)
-        ipos=1
-        do n=1,mp%neq
-            istart=this%ia(n+mp%offset)
-            istop=this%ia(n+mp%offset+1)-1
-            do jj=istart,istop
-                j=abs(this%ja(jj))
-                if(j>mp%offset .and. j<=mp%offset+mp%neq) then
-                    mp%idxglo(ipos)=jj
-                    ipos=ipos+1
-                endif
-            enddo
+      call this%modellist%getmodel(mp, im)
+      ipos=1
+      do n=1,mp%neq
+        istart=this%ia(n+mp%offset)
+        istop=this%ia(n+mp%offset+1)-1
+        do jj=istart,istop
+          j=abs(this%ja(jj))
+          if(j>mp%offset .and. j<=mp%offset+mp%neq) then
+            mp%idxglo(ipos)=jj
+            ipos=ipos+1
+          endif
         enddo
+      enddo
     enddo
-    !
-    !create arrays for mapping cross connections to global solution
+!
+! -- Create arrays for mapping cross connections to global solution
     do ic=1,this%crosslist%ncrosses
-        call this%crosslist%getcross(cp, ic)
-        if(cp%implicit) then
-            do n=1,cp%ncross
-                iglo=cp%nodem1(n)+cp%m1%offset
-                jglo=cp%nodem2(n)+cp%m2%offset
-                !find jglobal value in row iglo and store in idxglo
-                do ipos=this%ia(iglo),this%ia(iglo+1)-1
-                    if(jglo==this%ja(ipos)) then
-                        cp%idxglo(n)=ipos
-                        exit
-                    endif
-                enddo
-                do ipos=this%ia(jglo),this%ia(jglo+1)-1
-                    if(iglo==this%ja(ipos)) then
-                        cp%idxsymglo(n)=ipos
-                        exit
-                    endif
-                enddo
-            enddo
-        else
-            !put the initial x values into the cross package stage arrays
-            call cp%crossfmfill()
-        endif
+      call this%crosslist%getcross(cp, ic)
+!
+! -- If models are fully coupled in a single matrix
+      if(cp%implicit) then
+        do n=1,cp%ncross
+          iglo=cp%nodem1(n)+cp%m1%offset
+          jglo=cp%nodem2(n)+cp%m2%offset
+          !find jglobal value in row iglo and store in idxglo
+          do ipos=this%ia(iglo),this%ia(iglo+1)-1
+            if(jglo==this%ja(ipos)) then
+              cp%idxglo(n)=ipos
+              exit
+            endif
+          enddo
+          do ipos=this%ia(jglo),this%ia(jglo+1)-1
+            if(iglo==this%ja(ipos)) then
+              cp%idxsymglo(n)=ipos
+              exit
+            endif
+          enddo
+        enddo
+      else
+!
+! -- Not fully coupled, so put the initial x values into the cross 
+! -- package stage arrays
+        call cp%crossfmfill()
+      endif
     enddo    
-end subroutine connect
+!
+! -- return
+    return
+  end subroutine connect
 
-subroutine smsinit(this)
-    implicit none
-    class(solutiontype) :: this
-    call this%PNTSET()
-    call SMS7U1AR(this%iu)
-    call this%sms%PNTSAV()
-    if (this%sms%linmeth.eq.1) then
-      call this%xmd%PNTSAV()
-    else if (this%sms%linmeth.eq.2) then
-      call this%pcgu%PNTSAV()
-    end if
-    close(this%iu)
-end subroutine smsinit
+  subroutine smsinit(this)
+! ******************************************************************************
+! smsinit -- Initialize SMS
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
+  implicit none
+  class(solutiontype) :: this
+! ------------------------------------------------------------------------------
+!
+  call this%PNTSET()
+  call SMS7U1AR(this%iu)
+  call this%sms%PNTSAV()
+  if (this%sms%linmeth.eq.1) then
+    call this%xmd%PNTSAV()
+  else if (this%sms%linmeth.eq.2) then
+    call this%pcgu%PNTSAV()
+  end if
+  close(this%iu)
+!
+! -- return
+    return
+  end subroutine smsinit
 
-
-subroutine reset(this)
-    implicit none
-    class(solutiontype) :: this
-    integer :: i
-    do i=1,this%nja
-        this%amat(i)=0.
-    enddo
-    do i=1,this%neq
-        this%rhs(i)=0.
-    enddo
-end subroutine reset
+  subroutine reset(this)
+! ******************************************************************************
+! reset -- Reset This Solution
+! Reset this solution by setting amat and rhs to zero
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
+  implicit none
+  class(solutiontype) :: this
+  integer :: i
+! ------------------------------------------------------------------------------
+!
+  do i=1,this%nja
+      this%amat(i)=0.
+  enddo
+  do i=1,this%neq
+      this%rhs(i)=0.
+  enddo
+!
+! -- return
+    return
+  end subroutine reset
 
 subroutine solve(this)
     implicit none
@@ -409,7 +571,6 @@ subroutine solve(this)
     if (this%sms%icnvg.eq.1) exit
 
     end do
-
     
 end subroutine solve
 

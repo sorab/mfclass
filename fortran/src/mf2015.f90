@@ -1,10 +1,4 @@
-MODULE SimModule
-  implicit none
-  integer :: iout
-END MODULE SimModule
-
-
-
+!
 program mf2015fort
 ! ******************************************************************************
 ! Main MODFLOW-2015 program.
@@ -36,8 +30,7 @@ program mf2015fort
 1 FORMAT (/,34X,'MODFLOW',A,/,                                                 &
   4X,'U.S. GEOLOGICAL SURVEY MODULAR FINITE-DIFFERENCE',                       &
   ' GROUNDWATER FLOW MODEL',/,29X,'Version ',A/)
-  nsg=1  !hardwire the number of solution groups
-
+!
 ! -- Get current date and time, assign to IBDT, and write to screen
       CALL DATE_AND_TIME(VALUES=IBDT)
       WRITE(*,2) (IBDT(I),I=1,3),(IBDT(I),I=5,7)
@@ -62,25 +55,13 @@ program mf2015fort
   ! -- Assign crosses to correct solutions
   do is=1,solutionlist%nsolutions
     call solutionlist%getsolution(s,is)
-    allocate(s%crosslist%crosses(1)) !todo: this solution is hardwired for 1 cros
-    ipos=1
-    do ic=1,crosslist%ncrosses
-      call crosslist%getcross(c,ic)
-      if(c%m1%solutionid==is) then
-        call s%addcross(c,ipos)
-        ipos=ipos+1
-        cycle
-      elseif(c%m2%solutionid==is) then
-        call s%addcross(c,ipos)
-        ipos=ipos+1
-        cycle
-      endif
-    enddo
+    call s%slnassigncrosses()
   enddo
   !
-  ! -- Run the connect routines for each solution.  The connect routines build the
-  ! -- solution ia and ja arrays as well as the mapping arrays for each
-  ! -- model that is part the solution.
+  ! -- Run the connect routines for each solution.  The connect routines build
+  ! -- the solution ia and ja arrays as well as the mapping arrays for each
+  ! -- model that is part the solution.  Once the sizes are determined, then 
+  ! -- the sms arrays can be allocated
   do is=1,solutionlist%nsolutions
     call solutionlist%getsolution(s,is)
     call s%connect()
@@ -119,7 +100,7 @@ program mf2015fort
       do isg=1,nsolgps
         sgp=>solutiongrouplist(isg)
         do ipicard=1,sgp%mxiter
-          print *,'Picard iteration: ', ipicard
+          write(iout,'(/a,i6/)') 'PICARD ITERATION: ', ipicard
           do is=1,sgp%nsolutions
             sid=sgp%solutionidlist(is)
             call solutionlist%getsolution(s,sid)
@@ -163,7 +144,6 @@ program mf2015fort
 
 ! -- Deallocate everything here
     
-  print *, 'ending...'
 
 end program mf2015fort
 

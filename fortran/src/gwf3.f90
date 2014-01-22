@@ -35,6 +35,7 @@ module gwfmodule
     contains
     procedure :: modelst=>gwf3st
     procedure :: modelrp=>gwf3rp
+    procedure :: modelad=>gwf3ad
     procedure :: modelfmcalc=>gwf3fmcalc
     procedure :: modelfmfill=>gwf3fmfill
     procedure :: modelbd=>gwf3bd
@@ -73,6 +74,7 @@ module gwfmodule
 ! 
 !    SPECIFICATIONS:
 ! ------------------------------------------------------------------------------
+  use SimModule,only:iout
   use global,only: ia,ja
   implicit none
   character(len=*),intent(in) :: filename
@@ -80,16 +82,17 @@ module gwfmodule
   integer :: inunit
   type(gwfmodeltype), pointer :: gwfmodel
 ! ------------------------------------------------------------------------------
-!    
+!
 ! -- Create a new model and add it to the modellist container
   allocate(gwfmodel)
   call modellist%setmodel(gwfmodel,id)
-  print *,'Creating gwfmodel: ', id
   write(gwfmodel%name,'(a4,i1)') 'GWF_',id
 !
 ! -- Open the gwf name file
   call freeunitnumber(inunit)
-  print *, 'opening model namefile on unit: ', inunit
+  write(iout,'(/a,a)') ' Creating model: ', gwfmodel%name
+  WRITE(iout,'(a,a)') ' Using name file: ',trim(filename)
+  WRITE(iout,'(a,i6)') ' On unit number: ',inunit
   open(unit=inunit,file=filename,status='old')
 !
 ! -- Allocate and read bas and dis and then save to pointers
@@ -202,9 +205,9 @@ module gwfmodule
     integer :: ip,i
 ! ------------------------------------------------------------------------------
 !
-! -- Print routine name and set model object pointers
-  print *,'gwf3st'
-  call this%pntset
+! -- Call the simulation subroutine initialize routine and set pointers
+    call this%modelsubinit('gwf3st')
+    call this%pntset
 !
 ! -- Copy the starting heads into this%x
   if(kper==1) then
@@ -236,9 +239,10 @@ module gwfmodule
     class(gwfmodeltype) :: this
     class(packagetype), pointer :: p
     integer :: ip
+! ------------------------------------------------------------------------------
 !
-! -- Print routine name and set model object pointers
-    print *,'gwf3rp'
+! -- Call the simulation subroutine initialize routine
+    call this%modelsubinit('gwf3rp')
     call this%pntset
 !
 ! -- Call package read and prepare subroutines
@@ -275,8 +279,8 @@ module gwfmodule
     integer :: ip
 ! ------------------------------------------------------------------------------
 !
-! -- Print routine name and set model object pointers
-    print *,'gwf3ad'
+! -- Call the simulation subroutine initialize routine and set pointers
+    call this%modelsubinit('gwf3ad')
     call this%pntset
 !
 ! -- Call package read and prepare subroutines
@@ -306,8 +310,8 @@ module gwfmodule
     integer :: ip,ipos,kkiter
 ! ------------------------------------------------------------------------------
 !
-! -- Print routine name and set model object pointers
-    print *,'gwf3fmcalc'
+! -- Call the simulation subroutine initialize routine and set pointers
+    call this%modelsubinit('gwf3fmcalc')
     call this%pntset
 !
 ! -- Because global::hnew and this%x do not share memory, need to copy latest
@@ -354,8 +358,8 @@ module gwfmodule
     integer :: ip,n,i,ipos
 ! ------------------------------------------------------------------------------
 !
-! -- Print routine name and set model object pointers
-    print *,'gwf3fmfill'
+! -- Call the simulation subroutine initialize routine and set pointers
+    call this%modelsubinit('gwf3fmfill')
     call this%pntset
 !
 ! -- Copy gwf amat into this model conductance
@@ -402,8 +406,8 @@ module gwfmodule
     integer :: ip,icnvg
 ! ------------------------------------------------------------------------------
 !
-! -- Print routine name and set model object pointers
-    print *,'gwf3bd'
+! -- Call the simulation subroutine initialize routine and set pointers
+    call this%modelsubinit('gwf3bd')
     call this%pntset
 !      
 ! -- langevin mf2015 todo: get icnvg in here, also allocating flowja for budget
@@ -465,8 +469,8 @@ module gwfmodule
     integer :: icnvg
 ! ------------------------------------------------------------------------------
 !
-! -- Print routine name and set model object pointers
-    print *,'gwf3ot'
+! -- Call the simulation subroutine initialize routine and set pointers
+    call this%modelsubinit('gwf3ot')
     call this%pntset
 !      
 ! -- langevin mf2015 todo: get icnvg in here, also allocating flowja for budget
@@ -493,6 +497,7 @@ module gwfmodule
     implicit none
     class(gwfmodeltype) :: this
 ! ------------------------------------------------------------------------------
+!
     call this%gwfglodat%pntset
     iunit=>this%gwfglodat%iunit
     call this%gwfbasdat%pntset

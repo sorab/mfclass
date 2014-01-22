@@ -76,12 +76,13 @@ subroutine cross_list_init(ncrosses)
 end subroutine cross_list_init
 
 subroutine cross_create(filename,id,m1id,m2id)
+    use SimModule,only:iout
     implicit none
     character(len=*),intent(in) :: filename
     integer,intent(in) :: id,m1id,m2id
     character(len=300) :: line,fname
     character(len=20) :: filtyp
-    integer :: lloc,ityp1,ityp2,n,iout,inunit,npackages,ipak
+    integer :: lloc,ityp1,ityp2,n,inunit,npackages,ipak
     real :: r
     type(crosstype), pointer :: cross
     class(modeltype), pointer :: mp
@@ -89,16 +90,17 @@ subroutine cross_create(filename,id,m1id,m2id)
     !create a new cross and add it to the crosslist container
     allocate(cross)
     call crosslist%setcross(cross,id)
-
-    print *,'Creating cross.'
     call modellist%getmodel(mp, m1id)
     cross%m1=>mp
     call modellist%getmodel(mp, m2id)
     cross%m2=>mp
+    cross%name=trim(cross%m1%name)//'-to-'//trim(cross%m2%name)
     !
     !open the file
     call freeunitnumber(inunit)
-    print *, 'opening cross file on unit: ', inunit
+    write(iout,'(/a,a)') ' Creating cross: ', cross%name
+    WRITE(iout,'(a,a)') ' Using cross input file: ',trim(filename)
+    WRITE(iout,'(a,i6)') ' On unit number: ',inunit
     open(unit=inunit,file=filename)
     !
     !problem size: ncross
@@ -158,7 +160,6 @@ subroutine crossinit(this)
     class(packagetype), pointer :: packobj1,packobj2
     character(len=16) :: packname
     integer :: i,ipakid
-    print *,'initialize'
     !
     !check if m1 and m2 are part of the same solution.  if not
     !then they must be coupled explicitly

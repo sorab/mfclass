@@ -52,6 +52,7 @@ type modeltype
     procedure :: modelbdentry
     procedure :: pntset=>modelpntset
     procedure :: printname
+    procedure :: modelsubinit
 end type modeltype
 
 contains
@@ -358,6 +359,29 @@ end subroutine modelbdentry
 ! -- return
     return
   end subroutine modelpntset
+
+  subroutine modelsubinit(this,subname)
+! ******************************************************************************
+! modelsubinit -- Model Subroutine Initialization
+! This subroutine allows call stacks and additional information to be written
+! depending on the verbosity level in simmodule.
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
+    use SimModule,only:iout,iverbose
+    implicit none
+    class(modeltype) :: this
+    character(len=*) :: subname
+! ------------------------------------------------------------------------------
+!
+! -- write a message
+    if(iverbose>0) write(iout,'(a,a,a,a)')                                     &
+      '------Calling subroutine ',subname,' on model ',this%name
+!
+! -- return
+    return
+  end subroutine modelsubinit
 
 
 subroutine printname(this)
