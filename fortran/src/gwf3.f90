@@ -7,6 +7,14 @@ module gwfmodule
   use GWFBCFMODULE,only:gwfbcftype
   use GWFGHBMODULE,only:gwfghbtype
   use GWFWELMODULE,only:gwfweltype
+  use GWFCHDMODULE,only:gwfchdtype
+  use GWFDRNMODULE,only:gwfdrntype
+  use GWFEVTMODULE,only:gwfevttype
+  use GWFFHBMODULE,only:gwffhbtype
+  use GWFHFBMODULE,only:gwfhfbtype
+  use GWFRCHMODULE,only:gwfrchtype
+  use GWFRIVMODULE,only:gwfrivtype
+  use GWFSTRMODULE,only:gwfstrtype
   private
   public :: gwf3ar
   type, extends(modeltype) :: gwfmodeltype
@@ -16,6 +24,14 @@ module gwfmodule
     type(gwfbcftype) :: gwfbcfdat
     type(gwfghbtype) :: gwfghbdat
     type(gwfweltype) :: gwfweldat
+    type(gwfchdtype) :: gwfchddat
+    type(gwfdrntype) :: gwfdrndat
+    type(gwfevttype) :: gwfevtdat
+    type(gwffhbtype) :: gwffhbdat
+    type(gwfhfbtype) :: gwfhfbdat
+    type(gwfrchtype) :: gwfrchdat
+    type(gwfrivtype) :: gwfrivdat
+    type(gwfstrtype) :: gwfstrdat
     contains
     procedure :: modelst=>gwf3st
     procedure :: modelrp=>gwf3rp
@@ -104,6 +120,55 @@ module gwfmodule
     call gwfmodel%gwfghbdat%pntsav
   ENDIF
 !
+! -- Allocate and read chd and then save to pointers
+  IF(IUNIT(20).GT.0) THEN
+    CALL GWF2CHD7U1AR(IUNIT(20))
+    call gwfmodel%gwfchddat%pntsav
+  ENDIF  
+!
+! -- Allocate and read drn and then save to pointers
+  IF(IUNIT(3).GT.0) THEN
+    CALL GWF2DRN7U1AR(IUNIT(3))
+    call gwfmodel%gwfdrndat%pntsav
+  ENDIF
+!
+! -- Allocate and read evt and then save to pointers
+  IF(IUNIT(5).GT.0) THEN
+    CALL GWF2EVT8U1AR(IUNIT(5),IUNIT(15))
+    call gwfmodel%gwfevtdat%pntsav
+  ENDIF
+!
+! -- Allocate and read fhb and then save to pointers
+  IF(IUNIT(16).GT.0) THEN
+    CALL GWF2FHB7U1AR(IUNIT(16))
+    call gwfmodel%gwffhbdat%pntsav
+  ENDIF
+!
+! -- Allocate and read hfb and then save to pointers
+  IF(IUNIT(21).GT.0) THEN
+    CALL GWF2HFB7U1AR(IUNIT(21))
+    call gwfmodel%gwfhfbdat%pntsav
+  ENDIF
+!
+! -- Allocate and read rch and then save to pointers
+  IF(IUNIT(8).GT.0) THEN
+    CALL GWF2RCH8U1AR(IUNIT(8))
+    call gwfmodel%gwfrchdat%pntsav
+  ENDIF
+!
+! -- Allocate and read riv and then save to pointers
+  IF(IUNIT(4).GT.0) THEN
+    CALL GWF2RIV7U1AR(IUNIT(4))
+    call gwfmodel%gwfrivdat%pntsav
+  ENDIF
+!
+! -- Allocate and read str and then save to pointers
+  IF(IUNIT(18).GT.0) THEN
+    CALL GWF2STR7U1AR(IUNIT(18))
+    call gwfmodel%gwfstrdat%pntsav
+  ENDIF
+
+!
 ! -- Set and allocate gwfmodel variables and arrays
 ! -- langevin mfs015 todo: improve memory management. there is a copy
 ! -- of ia and ja in the model and in global
@@ -178,7 +243,14 @@ module gwfmodule
 !
 ! -- Call package read and prepare subroutines
     IF(IUNIT(2).GT.0) CALL GWF2WEL7U1RP(IUNIT(2))
+    IF(IUNIT(3).GT.0) CALL GWF2DRN7U1RP(IUNIT(3))
+    IF(IUNIT(4).GT.0) CALL GWF2RIV7U1RP(IUNIT(4))
+    IF(IUNIT(5).GT.0) CALL GWF2EVT8U1RP(IUNIT(5))
     IF(IUNIT(7).GT.0) CALL GWF2GHB7U1RP(IUNIT(7))
+    IF(IUNIT(8).GT.0) CALL GWF2RCH8U1RP(IUNIT(8))
+    IF(IUNIT(18).GT.0) CALL GWF2STR7U1RP(IUNIT(18))
+    IF(IUNIT(20).GT.0) CALL GWF2CHD7U1RP(IUNIT(20))
+!
     do ip=1,this%packages%npackages
       call this%packages%getpackage(p,ip)
       call p%packagerp()
@@ -247,8 +319,16 @@ module gwfmodule
     kkiter=1
     CALL GWF2BAS7U1FM
     IF(IUNIT(1).GT.0) CALL GWF2BCFU1FM(KKITER,kstp,kper)
+    IF(IUNIT(21).GT.0) CALL GWF2HFB7U1FM
     IF(IUNIT(2).GT.0) CALL GWF2WEL7U1FM
+    IF(IUNIT(3).GT.0) CALL GWF2DRN7U1FM
+    IF(IUNIT(4).GT.0) CALL GWF2RIV7U1FM
+    IF(IUNIT(5).GT.0) CALL GWF2EVT8U1FM
     IF(IUNIT(7).GT.0) CALL GWF2GHB7U1FM
+    IF(IUNIT(8).GT.0) CALL GWF2RCH8U1FM(kper)
+    IF(IUNIT(16).GT.0) CALL GWF2FHB7U1FM
+    IF(IUNIT(18).GT.0) CALL GWF2STR7U1FM
+!
     do ip=1,this%packages%npackages
       call this%packages%getpackage(p,ip)
       call p%fmcalc()
@@ -349,8 +429,18 @@ module gwfmodule
       CALL GWF2BCFU1BDADJWR(kstp,kper)
     ENDIF
     DEALLOCATE(FLOWJA)
+!
+! -- boundary packages
     IF(IUNIT(2).GT.0) CALL GWF2WEL7U1BD(kstp,kper)
+    IF(IUNIT(3).GT.0) CALL GWF2DRN7U1BD(KSTP,KPER)
+    IF(IUNIT(4).GT.0) CALL GWF2RIV7U1BD(KSTP,KPER)
+    IF(IUNIT(5).GT.0) CALL GWF2EVT8U1BD(KSTP,KPER,IUNIT(15))
     IF(IUNIT(7).GT.0) CALL GWF2GHB7U1BD(kstp,kper)
+    IF(IUNIT(8).GT.0) CALL GWF2RCH8U1BD(KSTP,KPER)
+    IF(IUNIT(16).GT.0) CALL GWF2FHB7U1BD(KSTP,KPER)
+    IF(IUNIT(18).GT.0) CALL GWF2STR7U1BD(KSTP,KPER)    
+!
+! -- modflow2015 packages
     do ip=1,this%packages%npackages
       call this%packages%getpackage(p,ip)
       call p%packagebd(this%x)
