@@ -33,10 +33,11 @@ subroutine ghb_ar(this,fname,id)
     character(len=*),intent(in) :: fname
     integer,intent(in) :: id
     integer :: maxbound
-
     print *,'Creating ghb package: ', id
+    this%filtyp='GHB'
+    write(this%name,'(a,i1)') 'GHB_',id
     call freeunitnumber(this%inunit)
-    print *, 'opening model namefile on unit: ', this%inunit
+    print *, 'opening ghb input file on unit: ', this%inunit
     open(unit=this%inunit,file=fname)
     read(this%inunit,*) maxbound
     !

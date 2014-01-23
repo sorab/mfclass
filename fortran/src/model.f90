@@ -201,17 +201,19 @@ module ModelModule
     return
   end subroutine model_create
 
-  subroutine package_create(fname,filtyp,ipakid,packages)
+    subroutine package_create(fname,filtyp,ipakid,packages)
 ! ******************************************************************************
 ! package_create -- Model Create Packages
-! Subroutine: (1) add new-style packages to this models package list
+! Subroutine: (1) create new-style package
+!             (2) add a pointer to the package
 ! ******************************************************************************
 ! 
 !    SPECIFICATIONS:
 ! ------------------------------------------------------------------------------
     use PackageModule
-    use welmodule
-    use ghbmodule
+    use welmodule,only:wel_create
+    use ghbmodule,only:ghb_create
+    USE wel8module,only:wel8_create
     implicit none
     character(len=*),intent(in) :: fname
     character(len=*),intent(in) :: filtyp
@@ -220,12 +222,24 @@ module ModelModule
     class(packagetype), pointer :: packobj
 ! ------------------------------------------------------------------------------
 !
-! -- Now supporting new-style WEL and GHB packages
-    if(filtyp=='WEL') then
-        call wel_create(packobj,fname,ipakid)
-    elseif(filtyp=='GHB') then
-        call ghb_create(packobj,fname,ipakid)
-    endif
+! -- Now supporting new-style WEL and GHB packages.
+! -- This part creates the package object by reading in the time-independent
+! -- information from fname
+    select case(filtyp)
+    case('WEL')
+      call wel_create(packobj,fname,ipakid)
+    case('GHB')
+      call ghb_create(packobj,fname,ipakid)
+    case('WEL8')
+      call wel8_create(packobj,fname,ipakid)
+    case default
+      print *,'Cannot create unknown package type: ', filtyp
+      call ustop(' ')
+    end select
+!
+! -- Packages is the packagelist that is associated with the parent model
+! -- The following statement puts a pointer to this package in the ipakid
+! -- position of packages.
     call packages%setpackage(packobj,ipakid)
 !
 ! -- return

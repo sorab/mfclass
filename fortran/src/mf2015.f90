@@ -194,56 +194,58 @@ subroutine simulation_init(simfile)
     CALL URWORD(LINE,LLOC,ITYP1,ITYP2,1,N,R,IOUT,INUNIT)
     filtyp=line(ityp1:ityp2)
     !
+    select case(filtyp)
+    !
     !open the simulation list file - temporary solution???
-    if (filtyp.eq.'LIST') then
+    case('LIST')
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,iout,INUNIT)
       fname=line(ityp1:ityp2)
       call freeunitnumber(iout)
       open(unit=iout,file=fname,status='unknown')
     !
     !set nmodels
-    elseif(filtyp.eq.'NMODELS') then
+    case('NMODELS')
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,nmodels,R,IOUT,INUNIT)
       call model_list_init(nmodels)
     !
     !create models
-    elseif(filtyp=='MODEL') then
+    case('MODEL')
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
       fname=line(ityp1:ityp2)
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,id,R,IOUT,INUNIT)
       call model_create(fname,id)
     !
-    elseif(filtyp=='GWFMODEL') then
+    case('GWFMODEL')
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
       fname=line(ityp1:ityp2)
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,id,R,IOUT,INUNIT)
       call gwf3ar(fname,id,iout)
     !
-    elseif(filtyp=='TDIS') then
+    case('TDIS')
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
       fname=line(ityp1:ityp2)
       call tdis_ar(fname,iout)
     !
     !set nsolutions
-    elseif(filtyp.eq.'NSOLUTIONS') then
+    case('NSOLUTIONS')
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,nsolutions,R,IOUT,INUNIT)
       call solution_list_init(nsolutions)
     !
     !create solutions
-    elseif(filtyp=='SOLUTION') then
+    case('SOLUTION')
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
       fname=line(ityp1:ityp2)
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,id,R,IOUT,INUNIT)
       call solution_create(fname,id)
     !    
     !set ncross
-    elseif(filtyp.eq.'NCROSSES') then
+    case('NCROSSES')
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,ncrosses,R,IOUT,INUNIT)
       call cross_list_init(ncrosses)
     !
     !create solutions
     id=1
-    elseif(filtyp=='XRS') then
+    case('XRS')
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
       fname=line(ityp1:ityp2)
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,m1,R,IOUT,INUNIT)
@@ -252,7 +254,7 @@ subroutine simulation_init(simfile)
       id=id+1
     !
     !solution groups
-    elseif(filtyp=='NSOLUTION_GROUPS') then  
+    case('NSOLUTION_GROUPS')  
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,nsolgps,R,IOUT,INUNIT)
       allocate(solutiongrouplist(nsolgps))
       do isgp=1,nsolgps
@@ -276,7 +278,12 @@ subroutine simulation_init(simfile)
           enddo !end of models
         enddo !end of solutions
       enddo !end of solution groups
-    endif
+    !
+    ! -- unknown filtype
+    case default
+      print *,'Unknown filtyp.  Stopping.',filtyp
+      call ustop(' ')
+    end select
     cycle
 100 exit        
   enddo

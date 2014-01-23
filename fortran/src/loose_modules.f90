@@ -14,7 +14,7 @@ subroutine sim_message(iv,message)
   implicit none
   integer,intent(in) :: iv
   character(len=*),intent(in) :: message
-  if(iv>iverbose) then
+  if(iv>=iverbose) then
     write(iout,'(a)') message
   endif
 end subroutine sim_message
