@@ -46,8 +46,6 @@ type crosstype
     procedure :: crossinit
     procedure :: crossfmfill
     procedure :: crossbd
-    !procedure :: fill_explicit
-    !procedure :: fill_implicit
 end type crosstype
 
 contains
@@ -239,12 +237,6 @@ subroutine crossbd(this)
     call this%m2%modelbdentry(packname,rout,rin)
   endif
 end subroutine crossbd
-
-subroutine printname(this)
-  implicit none
-  class(crosstype), intent(in) :: this
-  print *, 'cross Name: ', this%name
-end subroutine printname
 
 subroutine ghb_new(packobj,name,inunit,maxbound,nbound,nodelist,cond)
     !create a new ghb package for an explicit cross connection

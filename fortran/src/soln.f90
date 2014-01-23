@@ -99,6 +99,8 @@ contains
 ! ------------------------------------------------------------------------------
     implicit none
     integer,intent(in) :: nsolutions
+! ------------------------------------------------------------------------------
+!
     allocate(solutionlist%solutions(nsolutions))
 !
 ! -- return
@@ -508,57 +510,69 @@ contains
     return
   end subroutine reset
 
-subroutine solve(this)
+  subroutine solve(this,kstp,kper)
+! ******************************************************************************
+! solve -- Make a non-linear solve for this solution object
+! Construct the system of equations repeatedly within a mxiter loop, make
+! a linear solve, check for convergence, and continue if necessary.
+! Subroutine: (1) Reset amat and rhs to zero 
+!             (2) Calculate matrix terms
+!             (3) Add cross terms
+!             (4) Make a linear solution
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
     implicit none
     class(solutiontype) :: this
+    integer,intent(in) :: kstp
+    integer,intent(in) :: kper
     class(modeltype), pointer :: mp
     class(crosstype), pointer :: cp
     integer :: im,ic,i,nodem1sln,nodem2sln,idiagsln
     integer :: kiter
-    integer :: kstp,kper
-    
-    kstp=1
-    kper=1
-    
+! ------------------------------------------------------------------------------
+!
+! -- Nonlinear iteration loop    
     do kiter=1,this%sms%mxiter
-      !
-      !set amat and rhs to zero
+!
+! -- Set amat and rhs to zero
       call this%reset()
-      !
-      !modelfmcalc each model
+!
+! -- Calculate the matrix terms for each model
       do im=1,this%modellist%nmodels
-          call this%modellist%getmodel(mp, im)
-          call mp%modelfmcalc()
+        call this%modellist%getmodel(mp, im)
+        call mp%modelfmcalc()
       enddo
-      !
-      !fill each model
+!
+! -- Push the individual matrix terms into this solution amat and rhs
       do im=1,this%modellist%nmodels
-          call this%modellist%getmodel(mp, im)
-          call mp%modelfmfill(this%amat,this%nja)
+        call this%modellist%getmodel(mp, im)
+        call mp%modelfmfill(this%amat,this%nja)
       enddo
-      !
-      !add cross conductance to solution amat if implicit or
-      !or call crossfmfill to update the packages with appropriate
-      !model x values
+!
+! -- Add cross conductance to solution amat if implicit or
+! -- or call crossfmfill to update the packages with appropriate
+! -- model x values
       do ic=1,this%crosslist%ncrosses
-          call this%crosslist%getcross(cp, ic)
-          if(cp%implicit) then
-              do i=1,cp%ncross
-                  this%amat(cp%idxglo(i))=cp%cond(i)
-                  this%amat(cp%idxsymglo(i))=cp%cond(i)
-                  nodem1sln=cp%nodem1(i)+cp%m1%offset
-                  nodem2sln=cp%nodem2(i)+cp%m2%offset
-                  idiagsln=this%ia(nodem1sln)
-                  this%amat(idiagsln)=this%amat(idiagsln)-cp%cond(i)
-                  idiagsln=this%ia(nodem2sln)
-                  this%amat(idiagsln)=this%amat(idiagsln)-cp%cond(i)
-              enddo
-          else
-              call cp%crossfmfill()
-          endif
+        call this%crosslist%getcross(cp, ic)
+        if(cp%implicit) then
+          do i=1,cp%ncross
+            this%amat(cp%idxglo(i))=cp%cond(i)
+            this%amat(cp%idxsymglo(i))=cp%cond(i)
+            nodem1sln=cp%nodem1(i)+cp%m1%offset
+            nodem2sln=cp%nodem2(i)+cp%m2%offset
+            idiagsln=this%ia(nodem1sln)
+            this%amat(idiagsln)=this%amat(idiagsln)-cp%cond(i)
+            idiagsln=this%ia(nodem2sln)
+            this%amat(idiagsln)=this%amat(idiagsln)-cp%cond(i)
+          enddo
+        else
+          call cp%crossfmfill()
+        endif
       enddo
-      !
-      !call sms
+!
+! -- Set SMS pointers and make a linear solve
       call this%PNTSET()
       call this%sms%PNTSET()
       if (this%sms%linmeth.eq.1) then
@@ -567,18 +581,30 @@ subroutine solve(this)
         call this%pcgu%PNTSET()
       end if
       CALL GLO2SMS1AP(kiter,kstp,kper)
-    !check for convergence
-    if (this%sms%icnvg.eq.1) exit
-
+!
+! -- Exit outer iteration loop if converged
+      if (this%sms%icnvg.eq.1) exit
+!
+! -- End of outer iteration loop
     end do
-    
-end subroutine solve
+!
+! -- return
+    return
+  end subroutine solve
 
-subroutine save(this,filename)
+  subroutine save(this,filename)
+! ******************************************************************************
+! save -- Save Solution Matrices to a File
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
     implicit none
     class(solutiontype) :: this
     character(len=*), intent(in) :: filename
     integer :: inunit
+! ------------------------------------------------------------------------------
+!
     call freeunitnumber(inunit)
     open(unit=inunit,file=filename,status='unknown')
     write(inunit,*) 'ia'
@@ -592,12 +618,22 @@ subroutine save(this,filename)
     write(inunit,*) 'x'
     write(inunit,*) this%x
     close(inunit)
-end subroutine save
+!
+! -- return
+    return
+  end subroutine save
 
-subroutine solution_pntsav(this)
-    !use SOLUTION
+  subroutine solution_pntsav(this)
+! ******************************************************************************
+! solution_pntsav -- Save the pointers for this solution
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
     implicit none
     class(solutiontype) :: this
+! ------------------------------------------------------------------------------
+!
     this%neq=>neq
     this%nja=>nja
     this%ia=>ia
@@ -606,12 +642,22 @@ subroutine solution_pntsav(this)
     this%rhs=>rhs
     this%x=>x
     this%active=>active
-end subroutine solution_pntsav
+!
+! -- return
+    return
+  end subroutine solution_pntsav
 
-subroutine solution_pntset(this)
-    !use SOLUTION
+  subroutine solution_pntset(this)
+! ******************************************************************************
+! solution_pntset -- Set the pointers for this solution
+! ******************************************************************************
+! 
+!    SPECIFICATIONS:
+! ------------------------------------------------------------------------------
     implicit none
     class(solutiontype) :: this
+! ------------------------------------------------------------------------------
+!
     neq=>this%neq
     nja=>this%nja
     ia=>this%ia
@@ -620,7 +666,10 @@ subroutine solution_pntset(this)
     rhs=>this%rhs
     x=>this%x
     active=>this%active
-end subroutine solution_pntset
+!
+! -- return
+    return
+  end subroutine solution_pntset
 
 end module SOLUTIONMODULE
 

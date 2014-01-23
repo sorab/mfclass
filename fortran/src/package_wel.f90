@@ -6,7 +6,8 @@ type, extends(packagetype) :: weltype
     double precision, allocatable, dimension(:) :: q
     contains
     procedure :: wel_ar
-    procedure :: read_next
+    procedure :: wel_allocate
+    procedure :: packagerp=>welrp
     procedure :: fmcalc => welfmcalc
 end type weltype
 
@@ -37,14 +38,20 @@ subroutine wel_ar(this,fname,id)
     open(unit=this%inunit,file=fname,status='old')
     read(this%inunit,*) maxbound
     !
-    !allocate package members
-    call this%pack_allocate(maxbound)
-    !
-    !allocate well package members
-    allocate(this%q(maxbound))
+    !allocate arrays in package superclass and in weltype
+    call this%wel_allocate(maxbound)
 end subroutine wel_ar
 
-subroutine read_next(this)
+subroutine wel_allocate(this,maxbound)
+    !allocate wel package of size maxbound
+    implicit none
+    class(weltype) :: this
+    integer,intent(in) :: maxbound
+    call this%pack_allocate(maxbound)
+    allocate(this%q(maxbound))
+end subroutine wel_allocate
+
+subroutine welrp(this)
     implicit none
     class(weltype) :: this
     integer :: i
@@ -52,7 +59,7 @@ subroutine read_next(this)
     do i=1,this%nbound
         read(this%inunit,*) this%nodelist(i),this%q(i)
     enddo
-end subroutine read_next
+end subroutine welrp
 
 subroutine welfmcalc(this)
     implicit none

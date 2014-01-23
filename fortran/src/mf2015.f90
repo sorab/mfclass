@@ -19,6 +19,7 @@ program mf2015fort
   integer :: is,im,nsg,ic,ipos
   CHARACTER*40 VERSION
   CHARACTER*10 MFVNAM
+  character(len=200) :: fname
   PARAMETER (VERSION='0.1.00 01/14/2014')
   PARAMETER (MFVNAM='-2015')
   INTEGER :: IBDT(8)
@@ -104,7 +105,7 @@ program mf2015fort
           do is=1,sgp%nsolutions
             sid=sgp%solutionidlist(is)
             call solutionlist%getsolution(s,sid)
-            call s%solve()
+            call s%solve(kstp,kper)
           enddo
         enddo
       enddo
@@ -137,7 +138,8 @@ program mf2015fort
   ! -- Save each solution
   do is=1,solutionlist%nsolutions
     call solutionlist%getsolution(s,is)
-    call s%save('output.dat')
+    fname=trim(s%name)//'.output.dat'
+    call s%save(fname)
   enddo
 
   CALL GLO1BAS6ET(IOUT,IBDT,1)

@@ -393,7 +393,7 @@ module gwfmodule
   subroutine gwf3bd(this)
 ! ******************************************************************************
 ! gwf3bd -- GroundWater Flow Model Budget
-! Subroutine: (1) Fill the solution amat and rhs terms
+! Subroutine: (1) Tabulate Groundwater Flow Model Budget
 ! ******************************************************************************
 ! 
 !    SPECIFICATIONS:
@@ -563,6 +563,8 @@ module gwfmodule
     character(len=*),intent(in) :: text
     real,intent(in) :: rin
     real,intent(in) :: rout
+! ------------------------------------------------------------------------------
+!
     call this%pntset
     VBVL(3,MSUM)=RIN
     VBVL(1,MSUM)=VBVL(1,MSUM)+RIN*DELT
@@ -570,6 +572,9 @@ module gwfmodule
     VBVL(2,MSUM)=VBVL(2,MSUM)+ROUT*DELT
     VBNM(MSUM)=TEXT
     MSUM=MSUM+1
+!
+! -- return
+    return
   end subroutine gwf3bdentry
   
   end module gwfmodule

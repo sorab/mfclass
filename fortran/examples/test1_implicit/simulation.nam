@@ -1,7 +1,7 @@
 #note that the order matters here
-list model.lst
+list simulation.lst
 
-tdis model.tdis
+tdis simulation.tdis
 
 nmodels 2
 model model1.nam 1

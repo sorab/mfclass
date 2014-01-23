@@ -9,7 +9,7 @@ type, extends(packagetype) :: ghbtype
     contains
     procedure :: ghb_ar
     procedure :: ghb_allocate
-    procedure :: packagerp
+    procedure :: packagerp=>ghbrp
     procedure :: fmcalc => ghbfmcalc
 end type ghbtype
 
@@ -40,12 +40,8 @@ subroutine ghb_ar(this,fname,id)
     open(unit=this%inunit,file=fname)
     read(this%inunit,*) maxbound
     !
-    !allocate package members
-    call this%pack_allocate(maxbound)
-    !
-    !allocate ghb package members
-    allocate(this%cond(maxbound))
-    allocate(this%stage(maxbound))
+    !allocate arrays in package superclass and in ghbtype
+    call this%ghb_allocate(maxbound)
 end subroutine ghb_ar
 
 subroutine ghb_allocate(this,maxbound)
@@ -58,7 +54,7 @@ subroutine ghb_allocate(this,maxbound)
     allocate(this%stage(maxbound))
 end subroutine ghb_allocate
 
-subroutine packagerp(this)
+subroutine ghbrp(this)
     implicit none
     class(ghbtype) :: this
     integer :: i
@@ -67,7 +63,7 @@ subroutine packagerp(this)
     do i=1,this%nbound
         read(this%inunit,*) this%nodelist(i),this%stage(i),this%cond(i)
     enddo
-end subroutine packagerp
+end subroutine ghbrp
 
 subroutine ghbfmcalc(this)
     implicit none

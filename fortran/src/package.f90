@@ -7,6 +7,8 @@ type :: packagecontainer
     class(packagetype), pointer :: obj
 end type PackageContainer
 
+!langevin mf2015 todo: note maxpackages is hardwired for new-style
+!packages.  Need to fix this so it is based on entries in namefile
 integer, parameter :: maxpackages=20
 type packagelist
     integer :: npackages = 0
@@ -67,19 +69,19 @@ end subroutine pack_allocate
 subroutine packagest(this)
     implicit none
     class(packagetype) :: this
-    print *, 'packagest.  if you see this, this package has no ST routine.'
+    !this package has no ST routine
 end subroutine packagest
 
 subroutine packagerp(this)
     implicit none
     class(packagetype) :: this
-    print *, 'packagerp.  if you see this, this package has no RP routine'
+    !this package has no RP routine
 end subroutine packagerp
 
 subroutine packagead(this)
     implicit none
     class(packagetype) :: this
-    print *, 'packagead.  if you see this, this package has no AD routine'
+    !this package has no AD routine
 end subroutine packagead
 
 subroutine packagefmcalc(this)
