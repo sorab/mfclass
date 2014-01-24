@@ -13,15 +13,19 @@ end type weltype
 
 contains
 
-subroutine wel_create(packobj,fname,id)
+subroutine wel_create(packobj,fname,id,inunit,iout)
     implicit none
     class(packagetype), pointer :: packobj
     character(len=*),intent(in) :: fname
     integer,intent(in) :: id
+    integer,intent(in) :: inunit
+    integer,intent(in) :: iout
     type(weltype), pointer :: welobj
     integer :: maxbound
     allocate(welobj)
     packobj => welobj
+    welobj%inunit=inunit
+    welobj%iout=iout
     call welobj%wel_ar(fname,id)
 end subroutine wel_create
 
@@ -31,11 +35,10 @@ subroutine wel_ar(this,fname,id)
     character(len=*),intent(in) :: fname
     integer,intent(in) :: id
     integer :: maxbound
-    print *,'Creating well package: ', id
+    write(this%iout,*) 'Creating well package: ', id
     this%filtyp='WEL'
     write(this%name,'(a,i1)') 'WEL_',id
-    call freeunitnumber(this%inunit)
-    print *, 'opening well input file on unit: ', this%inunit
+    write(this%iout,*) 'opening well input file on unit: ', this%inunit
     open(unit=this%inunit,file=fname,status='old')
     read(this%inunit,*) maxbound
     !

@@ -22,15 +22,19 @@ type(gwfweltype) :: gwfweldat
 
 contains
 
-subroutine wel8_create(packobj,fname,id)
+subroutine wel8_create(packobj,fname,id,inunit,iout)
     implicit none
     class(packagetype), pointer :: packobj
     character(len=*),intent(in) :: fname
     integer,intent(in) :: id
+    integer,intent(in) :: inunit
+    integer,intent(in) :: iout
     type(weltype), pointer :: welobj
     integer :: maxbound
     allocate(welobj)
     packobj => welobj
+    welobj%inunit=inunit
+    welobj%iout=iout
     call welobj%wel_ar(fname,id)
 end subroutine wel8_create
 
@@ -39,19 +43,17 @@ subroutine wel_ar(this,fname,id)
     class(weltype) :: this
     character(len=*),intent(in) :: fname
     integer,intent(in) :: id
-    integer :: maxbound
-    print *,'Creating wel8 package: ', id
+    write(this%iout,*) 'Creating wel8 package: ', id
     this%filtyp='WEL'
     write(this%name,'(a,i1)') 'WEL8_',id
-
-    call freeunitnumber(this%inunit)
-    print *, 'opening well input file on unit: ', this%inunit
+    write(this%iout,*) 'opening well input file on unit: ', this%inunit
     open(unit=this%inunit,file=fname,status='old')
-    call GWF3WEL8U1AR(this%inunit)
+    call GWF3WEL8U1AR(this%inunit,this%iout)
     call gwfweldat%pntsav
+    this%maxbound=gwfweldat%mxwell
     !
     !allocate arrays in package superclass and in weltype
-    call this%wel_allocate(maxbound)
+    call this%wel_allocate(this%maxbound)
 end subroutine wel_ar
 
 subroutine wel_allocate(this,maxbound)
@@ -67,20 +69,20 @@ subroutine welrp(this)
     implicit none
     class(weltype) :: this
     integer :: i
-    read(this%inunit,*) this%nbound
-    do i=1,this%nbound
-        read(this%inunit,*) this%nodelist(i),this%q(i)
-    enddo
+    call gwfweldat%pntset
+    call GWF3WEL8U1RP(this%inunit,this%iout)
+    this%nbound=gwfweldat%nwells
+    this%nodelist=gwfweldat%well(1,:)
 end subroutine welrp
 
 subroutine welfmcalc(this)
     implicit none
     class(weltype) :: this
     integer :: i
-    do i=1,this%nbound
-        this%hcof(i) = 0.
-        this%rhs(i) = -this%q(i)
-    enddo
+    call gwfweldat%pntset
+    this%hcof(:)=0.
+    this%rhs(:)=0.
+    call GWF3WEL8U1FM(this%rhs)
 end subroutine welfmcalc
 
 end module wel8module

@@ -15,15 +15,19 @@ end type ghbtype
 
 contains
 
-subroutine ghb_create(packobj,fname,id)
+subroutine ghb_create(packobj,fname,id,inunit,iout)
     !create ghb object from fname
     implicit none
     class(packagetype), pointer :: packobj
     character(len=*),intent(in) :: fname
     integer,intent(in) :: id
+    integer,intent(in) :: inunit
+    integer,intent(in) :: iout
     type(ghbtype), pointer :: ghbobj
     allocate(ghbobj)
     packobj => ghbobj
+    ghbobj%inunit=inunit
+    ghbobj%iout=iout
     call ghbobj%ghb_ar(fname,id)
 end subroutine ghb_create
 
@@ -33,11 +37,10 @@ subroutine ghb_ar(this,fname,id)
     character(len=*),intent(in) :: fname
     integer,intent(in) :: id
     integer :: maxbound
-    print *,'Creating ghb package: ', id
+    write(this%iout,*) 'Creating ghb package: ', id
     this%filtyp='GHB'
     write(this%name,'(a,i1)') 'GHB_',id
-    call freeunitnumber(this%inunit)
-    print *, 'opening ghb input file on unit: ', this%inunit
+    write(this%iout,*)  'opening ghb input file on unit: ', this%inunit
     open(unit=this%inunit,file=fname)
     read(this%inunit,*) maxbound
     !

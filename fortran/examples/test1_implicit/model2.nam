@@ -1,6 +1,7 @@
 #
-dis model2.dis
+list 20 model2.lst
+dis  21 model2.dis
 #
 #packages
 npackages 1
-ghb model2.ghb
+ghb  22 model2.ghb

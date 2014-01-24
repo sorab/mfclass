@@ -1,8 +1,6 @@
 #note that the order matters here
 list simulation.lst
 
-tdis simulation.tdis
-
 nmodels 2
 gwfmodel model1.nam 1
 gwfmodel model2.nam 2
@@ -12,6 +10,8 @@ xrs simulation.xrs 1 2
 
 nsolutions 1
 solution simulation.sms 1
+
+tdis simulation.tdis
 
 #solution groups
 nsolution_groups 1

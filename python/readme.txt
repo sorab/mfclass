@@ -53,10 +53,10 @@ _____________________
 implicit
 TIMESTEP
 
-  MODEL CONVERGENCE PICARD
+  MODEL CONVERGENCE PICARD (only 1 iteration)
 
     SMS1 (SWR, MODFLOW)
-        PICARD/NEWTON (only 1 iteration)
+        PICARD/NEWTON 
           formulate
           newton-raphson
           linsolve

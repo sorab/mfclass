@@ -73,6 +73,7 @@
 		<File RelativePath="..\..\src\tdis.f90"/>
 		<File RelativePath="..\..\src\trn1.f"/>
 		<File RelativePath="..\..\src\utl7u1.f"/>
+		<File RelativePath="..\..\src\utl8.f"/>
 		<File RelativePath="..\..\src\wel8.f90"/>
 		<File RelativePath="..\..\src\wel8subs.f"/>
 		<File RelativePath="..\..\src\xmd.f"/>

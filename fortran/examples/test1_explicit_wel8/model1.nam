@@ -1,4 +1,5 @@
 list 10 model1.lst
 dis  11 model1.dis
-wel  12 model1.wel
+wel8 12 model1.a.wel
 ghb  13 model1.ghb
+wel8 14 model1.b.wel

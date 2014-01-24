@@ -510,7 +510,7 @@ module gwfmodule
     return
   end subroutine gwf3pntset
 
-  subroutine package_create(fname,filtyp,ipakid,packages)
+  subroutine package_create(fname,filtyp,ipakid,packages,inunit,iout)
 ! ******************************************************************************
 ! NOT USED YET for GWF.  If we decide to use the package list approach, then
 ! we will need to get information back from basopen in order to create
@@ -530,14 +530,16 @@ module gwfmodule
     character(len=*),intent(in) :: filtyp
     integer,intent(in) :: ipakid
     type(packagelist),intent(inout) :: packages
+    integer,intent(in) :: inunit
+    integer,intent(in) :: iout
     class(packagetype), pointer :: packobj
 ! ------------------------------------------------------------------------------
 !
 ! -- Create and add packages to this models list of packages
     if(filtyp=='WEL') then
-      call wel_create(packobj,fname,ipakid)
+      call wel_create(packobj,fname,ipakid,inunit,iout)
     elseif(filtyp=='GHB') then
-      call ghb_create(packobj,fname,ipakid)
+      call ghb_create(packobj,fname,ipakid,inunit,iout)
     endif
     call packages%setpackage(packobj,ipakid)
 !

@@ -22,6 +22,7 @@ type packagetype
     character(len=20) :: name
     character(len=4) :: filtyp
     integer :: inunit
+    integer :: iout
     integer :: maxbound
     integer :: nbound
     real :: rin

@@ -23,33 +23,34 @@ module ModelModule
   type(modellisttype) :: modellist
 !
   type modeltype
-      character(len=20) :: name
-      integer :: id
-      integer :: neq
-      integer :: nja
-      integer :: offset
-      integer :: solutionid=0
-      integer, allocatable, dimension(:) :: ia
-      integer, allocatable, dimension(:) :: ja
-      double precision, pointer, dimension(:) :: x
-      double precision, pointer, dimension(:) :: rhs
-      double precision, allocatable, dimension(:) :: cond
-      integer, allocatable, dimension(:) :: idxglo
-      type(packagelist) :: packages
-      integer, dimension(10) :: models
-      integer, dimension(10) :: crosses
-      contains
-      procedure :: disread
-      procedure :: modelst
-      procedure :: modelrp
-      procedure :: modelad
-      procedure :: modelfmcalc
-      procedure :: modelfmfill
-      procedure :: modelbd
-      procedure :: modelot
-      procedure :: modelbdentry
-      procedure :: pntset=>modelpntset
-      procedure :: modelsubinit
+    character(len=20) :: name
+    integer :: id
+    integer :: iout
+    integer :: neq
+    integer :: nja
+    integer :: offset
+    integer :: solutionid=0
+    integer, allocatable, dimension(:) :: ia
+    integer, allocatable, dimension(:) :: ja
+    double precision, pointer, dimension(:) :: x
+    double precision, pointer, dimension(:) :: rhs
+    double precision, allocatable, dimension(:) :: cond
+    integer, allocatable, dimension(:) :: idxglo
+    type(packagelist) :: packages
+    integer, dimension(10) :: models
+    integer, dimension(10) :: crosses
+    contains
+    procedure :: disread
+    procedure :: modelst
+    procedure :: modelrp
+    procedure :: modelad
+    procedure :: modelfmcalc
+    procedure :: modelfmfill
+    procedure :: modelbd
+    procedure :: modelot
+    procedure :: modelbdentry
+    procedure :: pntset=>modelpntset
+    procedure :: modelsubinit
   end type modeltype
 
   contains
@@ -130,13 +131,14 @@ module ModelModule
 ! 
 !    SPECIFICATIONS:
 ! ------------------------------------------------------------------------------
-    use SimModule,only:iout
+    use SimModule,only:ioutsim=>iout
     implicit none
     character(len=*),intent(in) :: filename
     integer,intent(in) :: id
     character(len=300) :: line,fname
     character(len=20) :: filtyp
-    integer :: lloc,ityp1,ityp2,n,inunit,npackages,ipak
+    integer :: n,inunit,npackages,ipak,iu,iout
+    integer :: lloc,ityp1,ityp2,istart,istop,inam1,inam2,iflen
     real :: r
     type(modeltype), pointer :: model
 ! ------------------------------------------------------------------------------
@@ -148,12 +150,13 @@ module ModelModule
 !
 ! -- Open the model name file
     call freeunitnumber(inunit)
-    write(iout,'(/a,a)') ' Creating model: ', model%name
-    WRITE(iout,'(a,a)') ' Using name file: ',trim(filename)
-    WRITE(iout,'(a,i6)') ' On unit number: ',inunit
+    write(ioutsim,'(/a,a)') ' Creating model: ', model%name
+    WRITE(ioutsim,'(a,a)') ' Using name file: ',trim(filename)
+    WRITE(ioutsim,'(a,i6)') ' On unit number: ',inunit
     open(unit=inunit,file=filename)
 !
 ! -- Read the name file and create the packages
+    iout=-1
     ipak=1
     do
 !
@@ -166,15 +169,27 @@ module ModelModule
       lloc=1
       CALL URWORD(LINE,LLOC,ITYP1,ITYP2,1,N,R,IOUT,INUNIT)
       filtyp=line(ityp1:ityp2)
+      CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IU,R,IOUT,INUNIT)
+      CALL URWORD(LINE,LLOC,INAM1,INAM2,0,N,R,IOUT,INUNIT)
+      IFLEN=INAM2-INAM1+1
+      FNAME(1:IFLEN)=LINE(INAM1:INAM2)
+!
+! -- Select Case
+      select case(filtyp)
+!
+! -- List file
+      case('LIST')
+        iout=iu
+        model%iout=iu
+        open(unit=iout,file=fname(1:iflen),status='unknown')
 !
 ! -- Simple DIS package created for this generic model
-      if(filtyp.eq.'DIS') then
+      case('DIS')
         CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
-        fname=line(ityp1:ityp2)
-        call model%disread(fname,id)
+        call model%disread(fname(1:iflen),id,iu,iout)
 !
 ! -- Create packages
-      elseif(filtyp.eq.'NPACKAGES') then
+      case('NPACKAGES')
         CALL URWORD(LINE,LLOC,ITYP1,ITYP2,2,npackages,R,IOUT,INUNIT)
 !
 ! -- Note that the size of model%packages is currently hardwired to 20
@@ -182,12 +197,10 @@ module ModelModule
         ipak=1
 !
 ! -- Create all other new-style packages (WEL, GHB, etc.)
-      else
-        CALL URWORD(LINE,LLOC,ITYP1,ITYP2,0,N,R,IOUT,INUNIT)
-        fname=line(ityp1:ityp2)
-        call package_create(fname,filtyp,ipak,model%packages)
+      case default
+        call package_create(fname(1:iflen),filtyp,ipak,model%packages,iu,iout)
         ipak=ipak+1
-      endif
+      end select
 !
 ! -- Cycle loop to avoid exit
       cycle
@@ -201,7 +214,7 @@ module ModelModule
     return
   end subroutine model_create
 
-    subroutine package_create(fname,filtyp,ipakid,packages)
+    subroutine package_create(fname,filtyp,ipakid,packages,inunit,iout)
 ! ******************************************************************************
 ! package_create -- Model Create Packages
 ! Subroutine: (1) create new-style package
@@ -219,6 +232,8 @@ module ModelModule
     character(len=*),intent(in) :: filtyp
     integer,intent(in) :: ipakid
     type(packagelist),intent(inout) :: packages
+    integer,intent(in) :: inunit
+    integer,intent(in) :: iout
     class(packagetype), pointer :: packobj
 ! ------------------------------------------------------------------------------
 !
@@ -227,11 +242,11 @@ module ModelModule
 ! -- information from fname
     select case(filtyp)
     case('WEL')
-      call wel_create(packobj,fname,ipakid)
+      call wel_create(packobj,fname,ipakid,inunit,iout)
     case('GHB')
-      call ghb_create(packobj,fname,ipakid)
+      call ghb_create(packobj,fname,ipakid,inunit,iout)
     case('WEL8')
-      call wel8_create(packobj,fname,ipakid)
+      call wel8_create(packobj,fname,ipakid,inunit,iout)
     case default
       print *,'Cannot create unknown package type: ', filtyp
       call ustop(' ')
@@ -247,7 +262,7 @@ module ModelModule
   end subroutine package_create
 
 
-  subroutine disread(this,filename,id)
+  subroutine disread(this,filename,id,inunit,iout)
 ! ******************************************************************************
 ! disread -- Read Simplified DIS File
 ! This is not a GWF DIS input file, this is a file that contains the following:
@@ -264,15 +279,16 @@ module ModelModule
     class(modeltype) :: this
     character(len=*), intent(in) :: filename
     integer,intent(in) :: id
+    integer,intent(in) :: inunit
+    integer,intent(in) :: iout
     character(len=300) :: line
     character(len=20) :: name
-    integer :: lloc,ityp1,ityp2,n,iout,inunit
+    integer :: lloc,ityp1,ityp2,n
     real :: r
 ! ------------------------------------------------------------------------------
 !
     this%id=id
-    call freeunitnumber(inunit)
-    print *, 'opening model dis file on unit: ', inunit
+    write(iout,*)  'opening model dis file on unit: ', inunit
     open(unit=inunit,file=filename)
     !
     !problem size: neq, nja

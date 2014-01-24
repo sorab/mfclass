@@ -1,21 +1,30 @@
 ! Started with gwf2welu1.f and then:
 !  (1) changed 'GWF2WEL7' TO 'GWF3WEL8'
 !  (2) commented out subroutine smooth
+!  (3) remove use global statements
+!  (4) hardwire ifrefm=1
+!  (5) add iout to subroutine statements
+!  (6) hardwire iunstr=1
+!  (7) temporarily disable parameter section in rp
+!  (8) pass rhs into fm (for other packages will also need hcof)
 
-      SUBROUTINE GWF3WEL8U1AR(IN)
+      SUBROUTINE GWF3WEL8U1AR(IN,IOUT)
 C     ******************************************************************
 C     ALLOCATE ARRAY STORAGE FOR WELL PACKAGE
 C     ******************************************************************
 C
 C        SPECIFICATIONS:
 C     ------------------------------------------------------------------
-      USE GLOBAL,      ONLY:IOUT,NCOL,NROW,NLAY,IFREFM,NODES,IUNSTR,NEQS
+      !langevin mf2015: USE GLOBAL,      ONLY:IOUT,NCOL,NROW,NLAY,IFREFM,NODES,IUNSTR,NEQS
       USE GWFWELMODULE, ONLY:NWELLS,MXWELL,NWELVL,IWELCB,IPRWEL,NPWEL,
      1                       IWELPB,NNPWEL,WELAUX,WELL,IWELQV,NNPWCLN,
      2                       IAFR
 C
       CHARACTER*200 LINE
 C     ------------------------------------------------------------------
+      ifrefm=1 !langevin mf2015
+      iunstr=1 !langevin mf2015
+C
       ALLOCATE(NWELLS,MXWELL,NWELVL,IWELCB,IPRWEL,IAFR)
       ALLOCATE(NPWEL,IWELPB,NNPWEL,IWELQV,NNPWCLN)
 C
@@ -137,20 +146,23 @@ C
 C6------RETURN
       RETURN
       END
-      SUBROUTINE GWF3WEL8U1RP(IN)
+      SUBROUTINE GWF3WEL8U1RP(IN,iout)
 C     ******************************************************************
 C     READ WELL DATA FOR A STRESS PERIOD
 C     ******************************************************************
 C
 C        SPECIFICATIONS:
 C     ------------------------------------------------------------------
-      USE GLOBAL,ONLY:IOUT,NCOL,NROW,NLAY,IFREFM,NODES,IUNSTR,NEQS,INCLN
+      !langevin mf2015: USE GLOBAL,ONLY:IOUT,NCOL,NROW,NLAY,IFREFM,NODES,IUNSTR,NEQS,INCLN
       USE GWFWELMODULE, ONLY:NWELLS,MXWELL,NWELVL,IPRWEL,NPWEL,
      1                       IWELPB,NNPWEL,WELAUX,WELL,NNPWCLN
 C
       CHARACTER*6 CWELL
 C     ------------------------------------------------------------------
 C
+      ifrefm=1 !langevin mf2015
+      iunstr=1 !langevin mf2015
+c
 C1------IDENTIFY PACKAGE.
       WRITE(IOUT,1)IN
     1 FORMAT(1X,/1X,'WEL -- WELL PACKAGE, VERSION 7, 5/2/2005',
@@ -214,13 +226,13 @@ C1B-----IF THERE ARE NEW NON-PARAMETER WELLS, READ THEM.
 C
         IF(ITMP.GT.0) THEN
           IF(IUNSTR.EQ.0)THEN
-            CALL ULSTRD(NNPWEL,WELL,1,NWELVL,MXWELL,1,IN,IOUT,
+            CALL ULSTRD2(NNPWEL,WELL,1,NWELVL,MXWELL,1,IN,IOUT,
      1           'WELL NO.  LAYER   ROW   COL   STRESS RATE',
-     2            WELAUX,20,NAUX,IFREFM,NCOL,NROW,NLAY,4,4,IPRWEL)
+     2            WELAUX,20,NAUX,IFREFM,4,4,IPRWEL)
           ELSE
-            CALL ULSTRDU(NNPWEL,WELL,1,NWELVL,MXWELL,1,IN,IOUT,
+            CALL ULSTRD2U(NNPWEL,WELL,1,NWELVL,MXWELL,1,IN,IOUT,
      &      'WELL NO.      NODE       STRESS FACTOR',
-     &       WELAUX,20,NAUX,IFREFM,NEQS,4,4,IPRWEL)
+     &       WELAUX,20,NAUX,IFREFM,4,4,IPRWEL)
           ENDIF
         ENDIF
 C
@@ -233,16 +245,16 @@ C
       NWELLS=NNPWEL+NNPWCLN
 C
 C1C-----IF THERE ARE ACTIVE WELL PARAMETERS, READ THEM AND SUBSTITUTE
-      CALL PRESET('Q')
-      NREAD=NWELVL-1
-      IF(NP.GT.0) THEN
-         DO 30 N=1,NP
-         CALL UPARLSTSUB(IN,'WEL',IOUTU,'Q',WELL,NWELVL,MXWELL,NREAD,
-     1                MXACTW,NWELLS,4,4,
-     2            'WELL NO.  LAYER   ROW   COL   STRESS RATE',
-     3            WELAUX,20,NAUX)
-   30    CONTINUE
-      END IF
+!langevin mf2015      CALL PRESET('Q')
+!langevin mf2015      NREAD=NWELVL-1
+!langevin mf2015      IF(NP.GT.0) THEN
+!langevin mf2015         DO 30 N=1,NP
+!langevin mf2015         CALL UPARLSTSUB(IN,'WEL',IOUTU,'Q',WELL,NWELVL,MXWELL,NREAD,
+!langevin mf2015     1                MXACTW,NWELLS,4,4,
+!langevin mf2015     2            'WELL NO.  LAYER   ROW   COL   STRESS RATE',
+!langevin mf2015     3            WELAUX,20,NAUX)
+!langevin mf2015   30    CONTINUE
+!langevin mf2015      END IF
 C
 C3------PRINT NUMBER OF WELLS IN CURRENT STRESS PERIOD.
       CWELL=' WELLS'
@@ -271,16 +283,17 @@ C
 C6------RETURN
       RETURN
       END
-      SUBROUTINE GWF3WEL8U1FM
+      SUBROUTINE GWF3WEL8U1FM(rhs)
 C     ******************************************************************
 C     SUBTRACT Q FROM RHS
 C     ******************************************************************
 C
 C        SPECIFICATIONS:
 C     ------------------------------------------------------------------
-      USE GLOBAL,       ONLY:IBOUND,RHS,AMAT,IA,TOP,BOT,HNEW,NODES
-      USE CLN1MODULE, ONLY: ACLNNDS
+      !USE GLOBAL,       ONLY:IBOUND,RHS,AMAT,IA,TOP,BOT,HNEW,NODES
+      !USE CLN1MODULE, ONLY: ACLNNDS
       USE GWFWELMODULE, ONLY:NWELLS,WELL,IWELQV
+      double precision,dimension(*),intent(inout) :: rhs
       DOUBLE PRECISION QTHIK,X,Y,Q,QA,QEPS,DQ,EPS,BOTT,THCK,HD
 C     ------------------------------------------------------------------
 C
@@ -293,37 +306,38 @@ C2------PROCESS EACH WELL IN THE WELL LIST.
       Q=WELL(4,L)
 C
 C2A-----IF THE CELL IS INACTIVE THEN BYPASS PROCESSING.
-      IF(IBOUND(N).LE.0) GO TO 100
-C
-C2B-----IF THE CELL IS VARIABLE HEAD THEN SUBTRACT Q FROM
-C       THE RHS ACCUMULATOR.
-      IF(IWELQV.EQ.1.AND.Q.LT.0)THEN
-        IPIV = IA(N)
-C-------HONOR SUPPLY/DEMAND CONDITIONS FOR EXTRACTION WELLS (NEWTON METHOD)
-        HD = HNEW(N)
-        IF(N.GT.NODES)THEN
-          ICLN = N-NODES
-          !!langevin mf2015 todo: remove thisCALL CLNV(ICLN,THCK)
-          QTHIK = THCK * 0.01 ! OVER 1 PERCENT OF CELL THICKNESS
-          BOTT = ACLNNDS(ICLN,5)
-        ELSE
-          QTHIK = (TOP(N) - BOT(N)) * 0.01 ! OVER 1 PERCENT OF CELL THICKNESS
-          BOTT = BOT(N)
-        ENDIF
-        X = (HD - BOTT) /QTHIK
-        CALL SMOOTH(X,Y)
-        QA = Q * Y
-C-------CALCULATE DQ/DH
-        EPS = 0.01 * QTHIK
-        X = (HD+EPS - BOTT) /QTHIK
-        CALL SMOOTH(X,Y)
-        QEPS = Q*Y
-        DQ = (QEPS - QA) / EPS
-        AMAT(IPIV) = AMAT(IPIV) + DQ
-        RHS(N) = RHS(N) - QA + DQ*HD
-      ELSE
-        RHS(N)=RHS(N)-Q
-      ENDIF
+!langevin mf2015      IF(IBOUND(N).LE.0) GO TO 100
+!langevin mf2015C
+!langevin mf2015C2B-----IF THE CELL IS VARIABLE HEAD THEN SUBTRACT Q FROM
+!langevin mf2015C       THE RHS ACCUMULATOR.
+!langevin mf2015      IF(IWELQV.EQ.1.AND.Q.LT.0)THEN
+!langevin mf2015        IPIV = IA(N)
+!langevin mf2015C-------HONOR SUPPLY/DEMAND CONDITIONS FOR EXTRACTION WELLS (NEWTON METHOD)
+!langevin mf2015        HD = HNEW(N)
+!langevin mf2015        IF(N.GT.NODES)THEN
+!langevin mf2015          ICLN = N-NODES
+!langevin mf2015          !!langevin mf2015 todo: remove thisCALL CLNV(ICLN,THCK)
+!langevin mf2015          QTHIK = THCK * 0.01 ! OVER 1 PERCENT OF CELL THICKNESS
+!langevin mf2015          BOTT = ACLNNDS(ICLN,5)
+!langevin mf2015        ELSE
+!langevin mf2015          QTHIK = (TOP(N) - BOT(N)) * 0.01 ! OVER 1 PERCENT OF CELL THICKNESS
+!langevin mf2015          BOTT = BOT(N)
+!langevin mf2015        ENDIF
+!langevin mf2015        X = (HD - BOTT) /QTHIK
+!langevin mf2015        CALL SMOOTH(X,Y)
+!langevin mf2015        QA = Q * Y
+!langevin mf2015C-------CALCULATE DQ/DH
+!langevin mf2015        EPS = 0.01 * QTHIK
+!langevin mf2015        X = (HD+EPS - BOTT) /QTHIK
+!langevin mf2015        CALL SMOOTH(X,Y)
+!langevin mf2015        QEPS = Q*Y
+!langevin mf2015        DQ = (QEPS - QA) / EPS
+!langevin mf2015        AMAT(IPIV) = AMAT(IPIV) + DQ
+!langevin mf2015        RHS(N) = RHS(N) - QA + DQ*HD
+!langevin mf2015      ELSE
+!langevin mf2015        RHS(N)=RHS(N)-Q
+      RHS(L)=RHS(L)-Q
+!langevin mf2015      ENDIF
   100 CONTINUE
 C
 C3------RETURN

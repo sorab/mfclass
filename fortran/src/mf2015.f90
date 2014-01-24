@@ -86,7 +86,7 @@ program mf2015fort
       ! -- print kstp info
           WRITE(*,25)KPER,KSTP
    25     FORMAT(' Solving:  Stress period: ',i5,4x,                          &
-     &       'Time step: ',i5,4x,'Groundwater Flow Eqn.')
+     &       'Time step: ',i5,4x)
       !
       ! -- Advance the time step
       do is=1,solutionlist%nsolutions

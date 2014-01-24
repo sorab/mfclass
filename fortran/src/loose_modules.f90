@@ -1,7 +1,7 @@
 MODULE SimModule
   implicit none
   integer :: iout
-  integer :: iverbose=1 !0: print nothing
+  integer :: iverbose=0 !0: print nothing
                         !1: print first level subroutine information
 END MODULE SimModule
 
@@ -14,7 +14,7 @@ subroutine sim_message(iv,message)
   implicit none
   integer,intent(in) :: iv
   character(len=*),intent(in) :: message
-  if(iv>=iverbose) then
+  if(iv<=iverbose) then
     write(iout,'(a)') message
   endif
 end subroutine sim_message
